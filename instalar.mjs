@@ -91,7 +91,34 @@ function registrar(ruta, etiqueta, { crearSiFalta = false } = {}) {
   }
 }
 
+/**
+ * Claude Desktop reescribe `claude_desktop_config.json` desde su estado en
+ * memoria al cerrarse, así que cualquier cosa escrita con la app abierta se
+ * pierde. Es la causa número uno de "lo instalé y no aparece".
+ */
+function claudeDesktopAbierto() {
+  try {
+    if (platform() === 'win32') {
+      const salida = execSync('tasklist /FI "IMAGENAME eq claude.exe" /NH', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      return /claude\.exe/i.test(salida);
+    }
+    const salida = execSync('pgrep -x Claude || true', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return salida.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
 paso('3. Registrando el servidor en Claude');
+
+const desktopAbierto = claudeDesktopAbierto();
+if (desktopAbierto) {
+  console.log(`  ${c.aviso}!${c.fin} Claude Desktop está abierto.`);
+  nota('Al cerrarse sobrescribe su configuración y borra lo que escribamos ahora.');
+  nota('Cierra Claude Desktop POR COMPLETO y vuelve a ejecutar el instalador.');
+  nota('(En Windows desde el ícono junto al reloj; en macOS con Command + Q.)');
+}
+
 registrar(join(homedir(), '.claude.json'), 'Claude Code', { crearSiFalta: true });
 
 const rutaDesktop =
@@ -101,6 +128,11 @@ const rutaDesktop =
       ? join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
       : join(homedir(), '.config', 'Claude', 'claude_desktop_config.json');
 registrar(rutaDesktop, 'Claude Desktop');
+if (desktopAbierto) {
+  mal('Claude Desktop estaba abierto: lo anterior se va a perder al cerrarlo.');
+  mal('Ciérralo del todo y ejecuta el instalador otra vez.');
+  errores++;
+}
 
 // ------------------------------------------------------------- 4. La skill
 paso('4. Instalando la skill de método');
