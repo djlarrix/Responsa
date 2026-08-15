@@ -73,12 +73,16 @@ const fondo = (color) => ({ fill: color });
   );
 
   s.addText('Creado por', {
-    x: M, y: 5.72, w: 3, h: 0.26, margin: 0,
+    x: M, y: 5.52, w: 3, h: 0.26, margin: 0,
     fontFace: SANS, fontSize: 11, color: GRIS, charSpacing: 1.5,
   });
   s.addText('Joaquín Larraín Guimoye', {
-    x: M, y: 5.99, w: 6, h: 0.42, margin: 0,
+    x: M, y: 5.79, w: 6, h: 0.42, margin: 0,
     fontFace: SERIF, fontSize: 19, bold: true, color: BLANCO,
+  });
+  s.addText('github.com/djlarrix/Responsa', {
+    x: M, y: 6.3, w: 6, h: 0.34, margin: 0, valign: 'top',
+    fontFace: 'Courier New', fontSize: 13, bold: true, color: BRONCE_CLARO,
   });
 
   // Marca de agua tipográfica: la definición latina, en grande y muy tenue.
@@ -556,7 +560,7 @@ function etiquetaSO(s, txt, x, y) {
 {
   const s = pres.addSlide();
   s.background = fondo(PERGAMINO);
-  tituloClaro(s, 'Paso 1 · Pegar el comando', 'Abre la terminal, pega la línea que corresponde a tu sistema y pulsa Enter');
+  tituloClaro(s, 'Paso 1 · Pegar el comando', 'Abre la terminal, pega la línea que corresponde a tu sistema y pulsa Enter. El texto de este PDF se puede copiar');
 
   // Windows
   etiquetaSO(s, 'Windows', M, 2.0);
@@ -605,7 +609,7 @@ function etiquetaSO(s, txt, x, y) {
     fontFace: SANS, fontSize: 10.5, bold: true, italic: true, color: BRONCE_CLARO,
   });
 
-  s.addText('Se puede ejecutar las veces que haga falta: si ya está instalado, actualiza.', {
+  s.addText('Se puede ejecutar las veces que haga falta: si ya está instalado, actualiza.   ·   Repositorio: github.com/djlarrix/Responsa', {
     x: M, y: 6.82, w: 11.63, h: 0.4, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 10.5, italic: true, color: GRIS,
   });
