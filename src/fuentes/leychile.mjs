@@ -161,9 +161,20 @@ async function normaCruda(idNorma) {
       articulos.push({ numero: nombre, derogado, texto });
     }
 
+    // Un idNorma inexistente devolvía un objeto vacío pero de aspecto normal
+    // (título en blanco, cero artículos, derogada: false), que se lee como
+    // "esta norma existe y no tiene articulado". Tiene que fallar.
+    const titulo = et(xml, 'TituloNorma');
+    if (!titulo && !articulos.length) {
+      throw new Error(
+        `Ley Chile no tiene ninguna norma con idNorma ${idNorma}. ` +
+          'Ubícala primero con `buscar_ley`; no uses este identificador.',
+      );
+    }
+
     return {
       idNorma: String(idNorma),
-      titulo: et(xml, 'TituloNorma'),
+      titulo,
       tipo: xml.match(/<Tipo>([^<]+)<\/Tipo>/)?.[1] ?? '',
       numero: xml.match(/<Numero>([^<]+)<\/Numero>/)?.[1] ?? '',
       organismo: et(xml, 'Organismo'),

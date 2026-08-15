@@ -41,6 +41,14 @@ export const COMPETENCIAS_OJV = {
  * No consulta nada: es un ayudante de navegación.
  */
 export function enlaceConsultaCausas({ tipo = 'rol', competencia, rol, era, nombre, rut } = {}) {
+  // Una competencia que no existe se ignoraba en silencio y los pasos salían
+  // sin ella, como si nunca se hubiera pedido. Mejor decirlo.
+  if (competencia && !COMPETENCIAS_OJV[competencia]) {
+    throw new Error(
+      `Competencia desconocida: "${competencia}". En la Oficina Judicial Virtual son: ${Object.keys(COMPETENCIAS_OJV).join(', ')}. ` +
+        'Ojo que no coinciden con las claves de los buscadores de jurisprudencia.',
+    );
+  }
   const comp = competencia && COMPETENCIAS_OJV[competencia];
 
   const pasos = {

@@ -309,8 +309,13 @@ function consultar(s, p, limite, pagina) {
  */
 export async function buscarSentencias(p = {}) {
   const tribunal = p.tribunal ?? 'corte_suprema';
-  const limite = Math.min(Math.max(p.limite ?? 5, 1), 50);
-  const pagina = Math.max(p.pagina ?? 1, 1);
+  // Un `limite` no numérico daba NaN, y el PJUD respondía con un error que
+  // parecía una caída suya. Se sanean aquí para que el fallo, si lo hay, sea
+  // de verdad de la fuente.
+  const nLimite = Number(p.limite);
+  const nPagina = Number(p.pagina);
+  const limite = Math.min(Math.max(Number.isFinite(nLimite) ? Math.trunc(nLimite) : 5, 1), 50);
+  const pagina = Math.max(Number.isFinite(nPagina) ? Math.trunc(nPagina) : 1, 1);
 
   // El token CSRF caduca antes que su TTL en caché (Laravel rota la sesión).
   // Si la primera consulta falla, se descarta la sesión y se reintenta con una
@@ -407,6 +412,12 @@ export async function buscarEnTodos(p = {}) {
 
 /** Trae una sentencia concreta por rol y año. */
 export async function verSentencia({ rol, era, tribunal = 'corte_suprema' }) {
+  // Sin rol ni año la consulta salía vacía y el PJUD devolvía un error que
+  // parecía una caída del servicio.
+  if (!String(rol ?? '').trim() || !String(era ?? '').trim()) {
+    throw new Error('Indica `rol` y `era` (año del rol). Por ejemplo: rol "34956", era "2026".');
+  }
+
   const r = await buscarSentencias({ tribunal, rol: String(rol), era: String(era), limite: 5 });
   if (!r.resultados.length) return { encontrada: false, mensaje: `Sin resultados para rol ${rol}-${era} en ${r.tribunal}.` };
   return { encontrada: true, tribunal: r.tribunal, ...r.resultados[0], como_verificar: r.como_verificar };

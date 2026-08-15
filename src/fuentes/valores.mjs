@@ -32,6 +32,14 @@ export async function valorEconomico({ indicador, fecha } = {}) {
   if (indicador && !INDICADORES[indicador]) {
     throw new Error(`Indicador desconocido: ${indicador}. Opciones: ${Object.keys(INDICADORES).join(', ')}`);
   }
+  // Una fecha mal formada llegaba a mindicador y volvía como HTTP 500, que
+  // parece una caída del servicio y no un dato mal escrito.
+  if (fecha && !/^\d{2}-\d{2}-\d{4}$/.test(String(fecha).trim())) {
+    throw new Error(`Fecha mal formada: "${fecha}". Debe ir como DD-MM-AAAA, por ejemplo 02-01-2024.`);
+  }
+  if (fecha && !indicador) {
+    throw new Error('Para consultar una fecha pasada hay que indicar también el `indicador` (uf, utm, ipc…).');
+  }
 
   // Los valores del día cambian; los históricos no. Se cachea distinto.
   const ruta = indicador ? (fecha ? `/${indicador}/${fecha}` : `/${indicador}`) : '';

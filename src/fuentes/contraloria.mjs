@@ -94,6 +94,16 @@ export async function buscarDictamenes(p = {}) {
 
 /** Detalle completo de un dictamen, incluido su estado y sus fuentes legales. */
 export async function verDictamen(unid, { textoCompleto = true } = {}) {
+  // El UNID de Domino son 32 caracteres hexadecimales. Con cualquier otra cosa
+  // la Contraloría devuelve una página genérica cuyo texto se colaba como si
+  // fuera la materia de un dictamen real, con vigente_aparente en true.
+  if (!/^[0-9A-F]{32}$/i.test(String(unid ?? '').trim())) {
+    throw new Error(
+      `"${unid}" no es un identificador de dictamen válido (deben ser 32 caracteres hexadecimales). ` +
+        'Tómalo del campo `unid` que entrega buscar_dictamenes.',
+    );
+  }
+
   return conCache(`cgr:dictamen:${unid}:${textoCompleto}`, 604800, async () => {
     const res = await pedirLatin1(`${BASE}cgrDetalleDictamenNVDA?OpenForm&UNID=${unid}`);
     if (!res.ok) throw new Error(`Contraloría respondió HTTP ${res.status} para el dictamen ${unid}`);

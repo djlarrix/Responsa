@@ -112,7 +112,14 @@ export async function consultarEstadistica(p) {
     competencia: p.competencia ?? 'Civil',
     anio: p.anio,
   };
+  // Un año no numérico llegaba a la URL y volvía como HTTP 40x, que parece un
+  // problema del servicio y no del dato pedido.
+  const anio = Number(args.anio);
   if (!args.anio) throw new Error('Falta `anio` (hay datos desde 2015).');
+  if (!Number.isInteger(anio) || anio < 2015 || anio > new Date().getFullYear()) {
+    throw new Error(`Año inválido: "${args.anio}". Debe ser un año entre 2015 y ${new Date().getFullYear()}.`);
+  }
+  args.anio = anio;
   if (def.necesita.includes('competencia') && !COMPETENCIAS.includes(args.competencia)) {
     throw new Error(`Competencia inválida: ${args.competencia}. Opciones: ${COMPETENCIAS.join(', ')}`);
   }

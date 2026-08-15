@@ -21,7 +21,7 @@ import { buscarNormas, verNorma, resolverCita } from './fuentes/leychile.mjs';
 import { buscarDoctrina, REVISTAS } from './fuentes/doctrina.mjs';
 import { buscarDictamenes, verDictamen } from './fuentes/contraloria.mjs';
 import { consultarEstadistica, CONSULTAS_DISPONIBLES, CORTES, COMPETENCIAS } from './fuentes/estadisticas.mjs';
-import { enlaceConsultaCausas } from './fuentes/causas.mjs';
+import { enlaceConsultaCausas, COMPETENCIAS_OJV } from './fuentes/causas.mjs';
 import { buscarLaudos, listarMateriasArbitrales } from './fuentes/arbitraje.mjs';
 import { valorEconomico, INDICADORES_DISPONIBLES } from './fuentes/valores.mjs';
 import { verificarFuentes } from './lib/salud.mjs';
@@ -235,7 +235,9 @@ const HERRAMIENTAS = [
       type: 'object',
       properties: {
         tipo: { type: 'string', enum: ['rol', 'nombre', 'rut_juridica'], description: 'Forma de búsqueda. Default rol.' },
-        competencia: { type: 'string', enum: Object.keys(BUSCADORES).concat(['corte_apelaciones']), description: 'Competencia.' },
+        // Las competencias de la OJV NO son las mismas claves que los
+        // buscadores de jurisprudencia (allá "laborales", aquí "laboral").
+        competencia: { type: 'string', enum: Object.keys(COMPETENCIAS_OJV), description: 'Competencia ante la que se tramita.' },
         rol: { type: 'string' },
         era: { type: 'string', description: 'Año del rol.' },
         nombre: { type: 'string' },
