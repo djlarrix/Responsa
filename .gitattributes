@@ -1,0 +1,16 @@
+# Los scripts de shell DEBEN viajar con finales de línea Unix. Si git los
+# convierte a CRLF al pasar por Windows, bash falla con "bad interpreter" y el
+# instalador de macOS deja de servir.
+*.sh text eol=lf
+
+# El resto se normaliza a LF en el repositorio.
+*.mjs text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.ps1 text eol=crlf
+
+# Binarios, sin tocar.
+*.pptx binary
+*.pdf binary
+*.png binary
