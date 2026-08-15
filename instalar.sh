@@ -23,6 +23,20 @@ malo() { printf '      %s%s%s\n' "$ROJO" "$1" "$FIN"; }
 printf '\n  %sRESPONSA%s\n' "$BLANCO" "$FIN"
 printf '  %sFuentes jurídicas chilenas verificables para Claude%s\n' "$BRONCE" "$FIN"
 
+# Claude Desktop reescribe su configuración al cerrarse, así que si está
+# abierto borrará el registro que hagamos. Hay que atajarlo antes de empezar.
+if pgrep -x "Claude" >/dev/null 2>&1; then
+  echo
+  printf '  %sALTO: Claude Desktop está abierto.%s\n' "$AMARILLO" "$FIN"
+  echo
+  printf '  %sAl cerrarse sobrescribe su configuración y borra el registro,%s\n' "$AMARILLO" "$FIN"
+  printf '  %sasí que la instalación no quedaría.%s\n' "$AMARILLO" "$FIN"
+  echo
+  printf '  %sCiérralo POR COMPLETO con Command + Q y vuelve a pegar este comando.%s\n' "$BLANCO" "$FIN"
+  echo
+  exit 1
+fi
+
 # ─────────────────────────────────────────────────────────── 1. Node.js
 paso 1 'Comprobando Node.js'
 

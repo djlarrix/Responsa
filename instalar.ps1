@@ -19,6 +19,21 @@ Write-Host ""
 Write-Host "  RESPONSA" -ForegroundColor White
 Write-Host "  Fuentes juridicas chilenas verificables para Claude" -ForegroundColor DarkYellow
 
+# Claude Desktop reescribe su configuracion al cerrarse, asi que si esta
+# abierto borrara el registro que hagamos. Hay que atajarlo antes de empezar.
+if (Get-Process -Name claude -ErrorAction SilentlyContinue) {
+  Write-Host ""
+  Write-Host "  ALTO: Claude Desktop esta abierto." -ForegroundColor Yellow
+  Write-Host ""
+  Write-Host "  Al cerrarse sobrescribe su configuracion y borra el registro," -ForegroundColor Yellow
+  Write-Host "  asi que la instalacion no quedaria." -ForegroundColor Yellow
+  Write-Host ""
+  Write-Host "  Cierralo POR COMPLETO (icono junto al reloj, clic derecho, Quit)" -ForegroundColor White
+  Write-Host "  y vuelve a pegar este comando." -ForegroundColor White
+  Write-Host ""
+  return
+}
+
 # ─────────────────────────────────────────────────────────── 1. Node.js
 Paso 1 'Comprobando Node.js'
 

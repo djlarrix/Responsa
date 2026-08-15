@@ -560,57 +560,64 @@ function etiquetaSO(s, txt, x, y) {
 {
   const s = pres.addSlide();
   s.background = fondo(PERGAMINO);
-  tituloClaro(s, 'Paso 1 · Pegar el comando', 'Abre la terminal, pega la línea que corresponde a tu sistema y pulsa Enter. El texto de este PDF se puede copiar');
+  tituloClaro(s, 'Paso 1 · Pegar el comando', 'Antes de empezar, cierra Claude Desktop por completo. El texto de este PDF se puede copiar');
+
+  // La causa número uno de "lo instalé y no aparece".
+  s.addShape(pres.ShapeType.roundRect, { x: M, y: 1.82, w: 11.63, h: 0.5, rectRadius: 0.05, fill: { color: 'FDF7E8' } });
+  s.addText(
+    'Claude Desktop tiene que estar CERRADO. Al cerrarse sobrescribe su configuración, así que si está abierto la instalación no queda.',
+    { x: M + 0.28, y: 1.82, w: 11.1, h: 0.5, margin: 0, valign: 'middle', fontFace: SANS, fontSize: 11, bold: true, color: OXBLOOD },
+  );
 
   // Windows
-  etiquetaSO(s, 'Windows', M, 2.0);
+  etiquetaSO(s, 'Windows', M, 2.5);
   s.addText('Menú Inicio → escribe «PowerShell» → ábrelo', {
-    x: M + 1.3, y: 2.02, w: 5.0, h: 0.28, margin: 0, valign: 'top',
+    x: M + 1.3, y: 2.52, w: 5.0, h: 0.28, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 11, color: GRIS,
   });
-  comandoChico(s, 'irm https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.ps1 | iex', M, 2.42, 11.63, 0.66);
+  comandoChico(s, 'irm https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.ps1 | iex', M, 2.92, 11.63, 0.62);
 
   // macOS
-  etiquetaSO(s, 'macOS', M, 3.34);
+  etiquetaSO(s, 'macOS', M, 3.8);
   s.addText('Command + Espacio → escribe «Terminal» → Enter', {
-    x: M + 1.3, y: 3.36, w: 5.0, h: 0.28, margin: 0, valign: 'top',
+    x: M + 1.3, y: 3.82, w: 5.0, h: 0.28, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 11, color: GRIS,
   });
-  comandoChico(s, 'curl -fsSL https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.sh | bash', M, 3.76, 11.63, 0.66);
+  comandoChico(s, 'curl -fsSL https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.sh | bash', M, 4.22, 11.63, 0.62);
 
   // Qué hace el comando
   s.addShape(pres.ShapeType.roundRect, {
-    x: M, y: 4.72, w: 5.6, h: 1.95, rectRadius: 0.06,
+    x: M, y: 5.06, w: 5.6, h: 1.66, rectRadius: 0.06,
     fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 },
   });
   s.addText('Qué hace por ti', {
-    x: M + 0.32, y: 4.94, w: 4.9, h: 0.28, margin: 0, valign: 'top',
+    x: M + 0.32, y: 5.24, w: 4.9, h: 0.28, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 12, bold: true, color: TINTA,
   });
   ['Instala Node.js si falta', 'Descarga Responsa a tu carpeta de usuario', 'Registra el servidor en Claude e instala la skill', 'Precarga los códigos y verifica las diez fuentes'].forEach((t, i) => {
     s.addText('·  ' + t, {
-      x: M + 0.32, y: 5.3 + i * 0.33, w: 5.0, h: 0.3, margin: 0, valign: 'top',
+      x: M + 0.32, y: 5.58 + i * 0.30, w: 5.0, h: 0.3, margin: 0, valign: 'top',
       fontFace: SANS, fontSize: 10.5, color: GRIS,
     });
   });
 
   // Qué esperar
-  s.addShape(pres.ShapeType.roundRect, { x: 6.85, y: 4.72, w: 5.63, h: 1.95, rectRadius: 0.06, fill: { color: TINTA } });
+  s.addShape(pres.ShapeType.roundRect, { x: 6.85, y: 5.06, w: 5.63, h: 1.66, rectRadius: 0.06, fill: { color: TINTA } });
   s.addText('Qué vas a ver', {
-    x: 7.2, y: 4.94, w: 4.9, h: 0.28, margin: 0, valign: 'top',
+    x: 7.2, y: 5.24, w: 4.9, h: 0.28, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 12, bold: true, color: BRONCE_CLARO,
   });
   s.addText(
     'Cuatro pasos numerados en pantalla. Tarda unos minutos, sobre todo la precarga de los códigos: la Biblioteca del Congreso limita las descargas grandes y conviene bajarlos con calma una vez.',
-    { x: 7.2, y: 5.28, w: 4.9, h: 0.9, margin: 0, valign: 'top', fontFace: SANS, fontSize: 10.5, color: BLANCO, lineSpacingMultiple: 1.1 },
+    { x: 7.2, y: 5.56, w: 4.9, h: 0.9, margin: 0, valign: 'top', fontFace: SANS, fontSize: 10.5, color: BLANCO, lineSpacingMultiple: 1.1 },
   );
   s.addText('Termina diciendo: Instalado. 10/10 fuentes responden.', {
-    x: 7.2, y: 6.22, w: 4.9, h: 0.32, margin: 0, valign: 'top',
+    x: 7.2, y: 6.4, w: 4.9, h: 0.32, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 10.5, bold: true, italic: true, color: BRONCE_CLARO,
   });
 
   s.addText('Se puede ejecutar las veces que haga falta: si ya está instalado, actualiza.   ·   Repositorio: github.com/djlarrix/Responsa', {
-    x: M, y: 6.82, w: 11.63, h: 0.4, margin: 0, valign: 'top',
+    x: M, y: 6.92, w: 11.63, h: 0.4, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 10.5, italic: true, color: GRIS,
   });
 }

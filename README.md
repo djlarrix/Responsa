@@ -73,6 +73,8 @@ Algunas hacen la diferencia frente a un buscador de texto:
 
 Un comando. Instala Node.js si falta, descarga Responsa, lo registra en Claude, instala la skill, precarga los códigos y verifica las fuentes.
 
+**Cierra Claude Desktop por completo antes de empezar.** Al cerrarse sobrescribe su configuración, así que si está abierto la instalación no queda.
+
 **Windows** (PowerShell):
 
 ```powershell

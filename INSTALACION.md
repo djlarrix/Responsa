@@ -10,6 +10,8 @@ Toma unos 15 minutos, casi todo esperando descargas.
 
 Dos pasos. Abre la terminal, pega la línea de tu sistema, y después reinicia Claude.
 
+**Antes de empezar: cierra Claude Desktop por completo.** Al cerrarse sobrescribe su configuración y borra el registro, así que con la app abierta la instalación no queda.
+
 **Windows** — menú Inicio → escribe «PowerShell» → ábrelo:
 
 ```powershell
