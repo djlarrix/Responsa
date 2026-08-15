@@ -146,9 +146,18 @@ function normasAplicadas(d) {
     const idNorma = ids[i];
     const clave = `${idNorma ?? nombre}|${articulo ?? ''}`;
     if (vistas.has(clave)) return;
+
+    // Los códigos son textos refundidos, así que el PJUD nombra sus artículos
+    // "ART. 1545 (DEL ART. 2)". Esa coletilla es una referencia interna al
+    // decreto que fija el texto y NO va en una cita: se cita "artículo 1545
+    // del Código Civil". Se separa para no arrastrarla a un escrito.
+    const crudo = (articulo ?? '').trim();
+    const m = crudo.match(/^(.*?)\s*\(\s*DEL\s+ART\.?\s*(\d+)\s*\)\s*$/i);
+
     vistas.set(clave, {
       norma: (nombre ?? '').trim(),
-      articulo: (articulo ?? '').trim(),
+      articulo: m ? m[1].trim() : crudo,
+      ...(m ? { articulo_bcn: crudo, dentro_del_articulo: m[2] } : {}),
       idNorma: idNorma ?? null,
       url: idNorma ? `https://www.bcn.cl/leychile/navegar?idNorma=${idNorma}` : null,
     });
