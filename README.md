@@ -79,9 +79,9 @@ node instalar.mjs
 
 Es idempotente y respalda cualquier configuración previa en `.bak-jurisprudencia` antes de tocarla. **Después hay que reiniciar Claude Desktop**: los servidores MCP se cargan al arrancar.
 
-📄 **[Manual de instalación paso a paso](INSTALACION.md)** — para Windows y macOS, escrito para quien no programa. Incluye problemas frecuentes y cómo desinstalar.
+📄 **[Responsa.pdf](docs/Responsa.pdf)** — un solo documento de 17 láminas: qué es, qué contiene y cómo funciona, seguido del manual de instalación paso a paso para Windows y macOS, con problemas frecuentes y mantención. Es lo que conviene enviarle a alguien que lo va a instalar.
 
-📊 **[Presentación](docs/Responsa.pptx)** — 12 láminas explicando qué es, qué contiene y cómo funciona.
+También en [texto plano](INSTALACION.md), por si se prefiere leer en el navegador.
 
 ### Paso a paso, si prefieres
 
