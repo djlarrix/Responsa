@@ -71,7 +71,27 @@ Algunas hacen la diferencia frente a un buscador de texto:
 
 ## Instalación
 
-Un solo comando hace todo: instala dependencias, registra el servidor en Claude Code y en Claude Desktop, instala la skill, precarga los códigos más citados y verifica las fuentes.
+Un comando. Instala Node.js si falta, descarga Responsa, lo registra en Claude, instala la skill, precarga los códigos y verifica las fuentes.
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.ps1 | iex
+```
+
+**macOS o Linux** (Terminal):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.sh | bash
+```
+
+Después hay que **reiniciar Claude Desktop por completo** (en Windows desde el ícono junto al reloj, en macOS con `Command + Q`): los servidores MCP se cargan al arrancar.
+
+Se puede ejecutar las veces que haga falta; si ya está instalado, actualiza.
+
+> Estos comandos descargan un script y lo ejecutan. Es la forma habitual de instalar herramientas de línea de comandos, pero conviene saberlo: los scripts son [`instalar.ps1`](instalar.ps1) e [`instalar.sh`](instalar.sh) y se pueden leer antes. Si prefieres no hacerlo así, más abajo está la instalación paso a paso.
+
+### Si ya tienes la carpeta descargada
 
 ```bash
 node instalar.mjs

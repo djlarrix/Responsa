@@ -6,6 +6,30 @@ Toma unos 15 minutos, casi todo esperando descargas.
 
 ---
 
+## La versión corta
+
+Dos pasos. Abre la terminal, pega la línea de tu sistema, y después reinicia Claude.
+
+**Windows** — menú Inicio → escribe «PowerShell» → ábrelo:
+
+```powershell
+irm https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.ps1 | iex
+```
+
+**macOS** — `Command + Espacio` → escribe «Terminal» → Enter:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.sh | bash
+```
+
+Eso instala Node.js si falta, descarga Responsa, lo registra en Claude, instala la skill, precarga los códigos y verifica las fuentes. Tarda unos minutos.
+
+Después: **cierra Claude Desktop por completo y vuelve a abrirlo.** En Windows desde el ícono junto al reloj (no basta cerrar la ventana); en macOS con `Command + Q`.
+
+Y listo. Lo demás de esta guía es para cuando algo no resulta, o si prefieres hacerlo paso a paso.
+
+---
+
 ## Índice
 
 1. [Qué se va a instalar](#1-qué-se-va-a-instalar)
@@ -18,6 +42,8 @@ Toma unos 15 minutos, casi todo esperando descargas.
 8. [Uso diario](#8-uso-diario)
 9. [Problemas frecuentes](#9-problemas-frecuentes)
 10. [Actualizar y desinstalar](#10-actualizar-y-desinstalar)
+
+> Los capítulos 3 a 5 describen la instalación manual. Si usaste el comando de arriba, ya están hechos.
 
 ---
 

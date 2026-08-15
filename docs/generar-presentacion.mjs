@@ -475,6 +475,15 @@ function comando(s, txt, x, y, w, alto = 0.5) {
   });
 }
 
+/** Igual, pero con letra más chica: para las URL largas de instalación. */
+function comandoChico(s, txt, x, y, w, alto = 0.5) {
+  s.addShape(pres.ShapeType.roundRect, { x, y, w, h: alto, rectRadius: 0.05, fill: { color: TINTA } });
+  s.addText(txt, {
+    x: x + 0.24, y, w: w - 0.48, h: alto, margin: 0, valign: 'middle',
+    fontFace: 'Courier New', fontSize: 12.5, bold: true, color: BRONCE_CLARO,
+  });
+}
+
 /** Etiqueta de sistema operativo. */
 function etiquetaSO(s, txt, x, y) {
   const w = 1.15;
@@ -490,31 +499,32 @@ function etiquetaSO(s, txt, x, y) {
   const s = pres.addSlide();
   s.background = fondo(TINTA);
 
-  s.addText('Manual de instalación', {
-    x: M, y: 2.5, w: 7.4, h: 0.85, margin: 0,
-    fontFace: SERIF, fontSize: 44, bold: true, color: BLANCO,
+  s.addText('Instalación', {
+    x: M, y: 2.42, w: 7.4, h: 0.95, margin: 0,
+    fontFace: SERIF, fontSize: 52, bold: true, color: BLANCO,
   });
-  s.addText('Windows y macOS · unos quince minutos, casi todo esperando descargas', {
-    x: M, y: 3.42, w: 7.4, h: 0.4, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 14, color: BRONCE_CLARO,
+  s.addText('Un comando, y reiniciar Claude. Eso es todo.', {
+    x: M, y: 3.46, w: 7.4, h: 0.45, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 17, color: BRONCE_CLARO,
   });
   s.addText(
-    'Escrito para quien no programa. Si algún paso da por sabido algo, es un error de esta guía y conviene avisarlo.',
-    { x: M, y: 3.95, w: 7.2, h: 0.6, margin: 0, valign: 'top', fontFace: SANS, fontSize: 12, color: GRIS_CLARO, italic: true },
+    'No hay que instalar nada a mano ni saber usar la terminal más allá de pegar una línea. ' +
+    'El instalador se encarga de Node.js, de la descarga y de la configuración.',
+    { x: M, y: 4.1, w: 7.0, h: 0.8, margin: 0, valign: 'top', fontFace: SANS, fontSize: 12.5, color: GRIS_CLARO, lineSpacingMultiple: 1.2 },
   );
 
-  const pasos = ['Instalar Node.js', 'Descargar Responsa', 'Ejecutar el instalador', 'Reiniciar Claude', 'Comprobar que funciona'];
-  pasos.forEach((t, i) => {
-    const y = 5.05 + Math.floor(i / 3) * 0.62;
-    const x = M + (i % 3) * 2.55;
-    numeral(s, i + 1, x, y, 0.34);
-    s.addText(t, {
-      x: x + 0.46, y: y + 0.02, w: 2.05, h: 0.3, margin: 0, valign: 'top',
-      fontFace: SANS, fontSize: 11.5, color: BLANCO,
-    });
+  numeral(s, 1, M, 5.35, 0.4);
+  s.addText('Pegar el comando en la terminal', {
+    x: M + 0.56, y: 5.38, w: 4.2, h: 0.32, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 13, color: BLANCO,
+  });
+  numeral(s, 2, M, 5.95, 0.4);
+  s.addText('Reiniciar Claude', {
+    x: M + 0.56, y: 5.98, w: 4.2, h: 0.32, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 13, color: BLANCO,
   });
 
-  // Lo que se instala, para que nadie apruebe a ciegas.
+  // Qué queda instalado, para que nadie apruebe a ciegas.
   s.addShape(pres.ShapeType.roundRect, { x: 8.55, y: 2.4, w: 3.93, h: 4.02, rectRadius: 0.06, fill: { color: TINTA_2 } });
   s.addText('Qué queda instalado', {
     x: 8.95, y: 2.72, w: 3.2, h: 0.28, margin: 0, valign: 'top',
@@ -542,297 +552,161 @@ function etiquetaSO(s, txt, x, y) {
   });
 }
 
-// ── Paso 1: Node.js ────────────────────────────────────────────────────
+// ── El comando ─────────────────────────────────────────────────────────
 {
   const s = pres.addSlide();
   s.background = fondo(PERGAMINO);
-  tituloClaro(s, 'Paso 1 · Instalar Node.js', 'Es el motor que ejecuta Responsa. Software estándar y gratuito');
+  tituloClaro(s, 'Paso 1 · Pegar el comando', 'Abre la terminal, pega la línea que corresponde a tu sistema y pulsa Enter');
 
-  s.addText('Primero, comprobar si ya está. Abre la terminal y escribe:', {
-    x: M, y: 2.0, w: 6.2, h: 0.3, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 12, color: TINTA,
-  });
-  comando(s, 'node --version', M, 2.36, 5.0);
-  s.addText(
-    'Si responde v20 o superior, ya está: salta al paso 2. Si dice que no reconoce el comando, sigue aquí.',
-    { x: M, y: 2.98, w: 5.0, h: 0.5, margin: 0, valign: 'top', fontFace: SANS, fontSize: 11, color: GRIS },
-  );
-
-  // Cómo abrir la terminal, que es lo que más traba a quien no programa.
-  s.addShape(pres.ShapeType.roundRect, { x: M, y: 3.68, w: 5.0, h: 1.5, rectRadius: 0.06, fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 } });
-  s.addText('Cómo se abre la terminal', {
-    x: M + 0.3, y: 3.9, w: 4.4, h: 0.28, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 11.5, bold: true, color: TINTA,
-  });
-  s.addText('Windows:  menú Inicio → escribir «PowerShell» → abrirlo.', {
-    x: M + 0.3, y: 4.24, w: 4.4, h: 0.3, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10.5, color: GRIS,
-  });
-  s.addText('macOS:  Command + Espacio → escribir «Terminal» → Enter.', {
-    x: M + 0.3, y: 4.6, w: 4.4, h: 0.3, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10.5, color: GRIS,
-  });
-
-  // Instrucciones por sistema.
-  const col = 6.55;
-  etiquetaSO(s, 'Windows', col, 2.0);
-  const win = [
-    'Entrar a nodejs.org',
-    'Descargar la versión que dice LTS (la otra es para desarrolladores)',
-    'Abrir el archivo .msi y aceptar todo por defecto',
-    'Cerrar y volver a abrir la terminal',
-  ];
-  win.forEach((t, i) => {
-    s.addText(`${i + 1}.  ${t}`, {
-      x: col, y: 2.42 + i * 0.42, w: 5.4, h: 0.38, margin: 0, valign: 'top',
-      fontFace: SANS, fontSize: 11, color: TINTA,
-    });
-  });
-
-  etiquetaSO(s, 'macOS', col, 4.3);
-  const mac = [
-    'Entrar a nodejs.org',
-    'Descargar la versión LTS para macOS',
-    'Abrir el archivo .pkg y aceptar todo por defecto',
-  ];
-  mac.forEach((t, i) => {
-    s.addText(`${i + 1}.  ${t}`, {
-      x: col, y: 4.72 + i * 0.42, w: 5.4, h: 0.38, margin: 0, valign: 'top',
-      fontFace: SANS, fontSize: 11, color: TINTA,
-    });
-  });
-  s.addText(
-    'Si macOS advierte sobre «un desarrollador no identificado»: Ajustes del Sistema → Privacidad y seguridad → Abrir de todas formas.',
-    { x: col, y: 6.0, w: 5.4, h: 0.5, margin: 0, valign: 'top', fontFace: SANS, fontSize: 10, italic: true, color: OXBLOOD },
-  );
-}
-
-// ── Paso 2: descargar ──────────────────────────────────────────────────
-{
-  const s = pres.addSlide();
-  s.background = fondo(PERGAMINO);
-  tituloClaro(s, 'Paso 2 · Descargar Responsa', 'Y dejarlo en un lugar donde no se vaya a borrar por error');
-
-  s.addShape(pres.ShapeType.roundRect, { x: M, y: 2.0, w: 5.6, h: 2.7, rectRadius: 0.06, fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 } });
-  s.addText('Opción A · descarga directa', {
-    x: M + 0.32, y: 2.26, w: 4.9, h: 0.3, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 12.5, bold: true, color: TINTA,
-  });
-  ['Entrar a la página del proyecto en GitHub', 'Pulsar el botón verde Code → Download ZIP', 'Descomprimir el archivo'].forEach((t, i) => {
-    s.addText(`${i + 1}.  ${t}`, {
-      x: M + 0.32, y: 2.66 + i * 0.4, w: 4.9, h: 0.36, margin: 0, valign: 'top',
-      fontFace: SANS, fontSize: 11, color: GRIS,
-    });
-  });
-  s.addText('4.  Mover la carpeta a tu carpeta de usuario', {
-    x: M + 0.32, y: 3.86, w: 4.9, h: 0.36, margin: 0, valign: 'top',
+  // Windows
+  etiquetaSO(s, 'Windows', M, 2.0);
+  s.addText('Menú Inicio → escribe «PowerShell» → ábrelo', {
+    x: M + 1.3, y: 2.02, w: 5.0, h: 0.28, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 11, color: GRIS,
   });
-  s.addText('Windows:  C:\\Users\\TU_USUARIO\\Responsa          macOS:  ~/Responsa', {
-    x: M + 0.32, y: 4.2, w: 5.0, h: 0.3, margin: 0, valign: 'top',
-    fontFace: 'Courier New', fontSize: 9.5, color: TINTA,
+  comandoChico(s, 'irm https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.ps1 | iex', M, 2.42, 11.63, 0.66);
+
+  // macOS
+  etiquetaSO(s, 'macOS', M, 3.34);
+  s.addText('Command + Espacio → escribe «Terminal» → Enter', {
+    x: M + 1.3, y: 3.36, w: 5.0, h: 0.28, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11, color: GRIS,
   });
+  comandoChico(s, 'curl -fsSL https://raw.githubusercontent.com/djlarrix/Responsa/main/instalar.sh | bash', M, 3.76, 11.63, 0.66);
 
-  s.addShape(pres.ShapeType.roundRect, { x: M, y: 4.95, w: 5.6, h: 1.35, rectRadius: 0.06, fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 } });
-  s.addText('Opción B · con git', {
-    x: M + 0.32, y: 5.18, w: 4.9, h: 0.3, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 12.5, bold: true, color: TINTA,
+  // Qué hace el comando
+  s.addShape(pres.ShapeType.roundRect, {
+    x: M, y: 4.72, w: 5.6, h: 1.95, rectRadius: 0.06,
+    fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 },
   });
-  comando(s, 'git clone <URL> Responsa', M + 0.32, 5.56, 4.9, 0.45);
-
-  // La advertencia que evita el problema más común después.
-  s.addShape(pres.ShapeType.roundRect, { x: 7.0, y: 2.0, w: 5.48, h: 2.4, rectRadius: 0.06, fill: { color: TINTA } });
-  s.addText('La carpeta se queda donde la dejes', {
-    x: 7.4, y: 2.3, w: 4.7, h: 0.32, margin: 0, valign: 'top',
-    fontFace: SERIF, fontSize: 17, bold: true, color: BRONCE_CLARO,
-  });
-  s.addText(
-    'Claude va a apuntar a esa ruta cada vez que arranque. Si después mueves la carpeta o la renombras, deja de encontrarla.',
-    { x: 7.4, y: 2.78, w: 4.7, h: 0.8, margin: 0, valign: 'top', fontFace: SANS, fontSize: 11.5, color: BLANCO, lineSpacingMultiple: 1.15 },
-  );
-  s.addText(
-    'No es grave si pasa: basta con volver a ejecutar el instalador desde la ubicación nueva.',
-    { x: 7.4, y: 3.62, w: 4.7, h: 0.6, margin: 0, valign: 'top', fontFace: SANS, fontSize: 10.5, color: GRIS_CLARO, italic: true },
-  );
-
-  s.addText('No hace falta cuenta en ningún servicio, ni claves, ni suscripciones. Todas las fuentes son públicas y gratuitas.', {
-    x: 7.0, y: 4.72, w: 5.48, h: 0.5, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 11, italic: true, color: GRIS,
-  });
-}
-
-// ── Paso 3: el instalador ──────────────────────────────────────────────
-{
-  const s = pres.addSlide();
-  s.background = fondo(PERGAMINO);
-  tituloClaro(s, 'Paso 3 · Ejecutar el instalador', 'Un solo comando hace todo, y se puede repetir sin riesgo');
-
-  s.addText('Situarse en la carpeta:', {
-    x: M, y: 1.98, w: 5.3, h: 0.28, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 12, color: TINTA,
-  });
-  etiquetaSO(s, 'Windows', M, 2.3);
-  comando(s, 'cd C:\\Users\\TU_USUARIO\\Responsa', M + 1.3, 2.26, 4.0, 0.42);
-  etiquetaSO(s, 'macOS', M, 2.82);
-  comando(s, 'cd ~/Responsa', M + 1.3, 2.78, 4.0, 0.42);
-
-  s.addText('Truco: escribe «cd » y arrastra la carpeta a la ventana; la ruta se escribe sola.', {
-    x: M, y: 3.32, w: 5.3, h: 0.4, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10, italic: true, color: GRIS,
-  });
-
-  s.addText('Y ejecutar:', {
-    x: M, y: 3.86, w: 5.3, h: 0.28, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 12, color: TINTA,
-  });
-  comando(s, 'node instalar.mjs', M, 4.18, 5.3, 0.62);
-
-  s.addText(
-    'El paso 5 es el más lento, unos minutos. Es a propósito: la Biblioteca del Congreso limita las descargas grandes, y bajar los códigos con calma una vez evita topes durante el uso normal.',
-    { x: M, y: 5.0, w: 5.3, h: 0.9, margin: 0, valign: 'top', fontFace: SANS, fontSize: 10.5, color: GRIS, lineSpacingMultiple: 1.1 },
-  );
-
-  // Qué va mostrando en pantalla.
-  s.addShape(pres.ShapeType.roundRect, { x: 6.75, y: 1.98, w: 5.73, h: 3.55, rectRadius: 0.06, fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 } });
-  s.addText('Qué vas a ver en pantalla', {
-    x: 7.1, y: 2.22, w: 5.0, h: 0.3, margin: 0, valign: 'top',
+  s.addText('Qué hace por ti', {
+    x: M + 0.32, y: 4.94, w: 4.9, h: 0.28, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 12, bold: true, color: TINTA,
   });
-  const etapas = [
-    'Comprueba Node',
-    'Instala dependencias',
-    'Registra el servidor en Claude',
-    'Instala la skill de método',
-    'Precarga los códigos más citados',
-    'Verifica las diez fuentes',
-  ];
-  etapas.forEach((t, i) => {
-    const y = 2.62 + i * 0.44;
-    numeral(s, i + 1, 7.1, y, 0.3);
-    s.addText(t, {
-      x: 7.52, y: y + 0.02, w: 4.6, h: 0.3, margin: 0, valign: 'top',
-      fontFace: SANS, fontSize: 11, color: GRIS,
+  ['Instala Node.js si falta', 'Descarga Responsa a tu carpeta de usuario', 'Registra el servidor en Claude e instala la skill', 'Precarga los códigos y verifica las diez fuentes'].forEach((t, i) => {
+    s.addText('·  ' + t, {
+      x: M + 0.32, y: 5.3 + i * 0.33, w: 5.0, h: 0.3, margin: 0, valign: 'top',
+      fontFace: SANS, fontSize: 10.5, color: GRIS,
     });
   });
 
-  s.addShape(pres.ShapeType.roundRect, { x: 6.75, y: 5.72, w: 5.73, h: 0.72, rectRadius: 0.05, fill: { color: TINTA } });
-  s.addText('Instalado.  10/10 fuentes responden.', {
-    x: 7.0, y: 5.72, w: 5.2, h: 0.72, margin: 0, valign: 'middle',
-    fontFace: 'Courier New', fontSize: 12, bold: true, color: BRONCE_CLARO,
+  // Qué esperar
+  s.addShape(pres.ShapeType.roundRect, { x: 6.85, y: 4.72, w: 5.63, h: 1.95, rectRadius: 0.06, fill: { color: TINTA } });
+  s.addText('Qué vas a ver', {
+    x: 7.2, y: 4.94, w: 4.9, h: 0.28, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 12, bold: true, color: BRONCE_CLARO,
   });
-  s.addText('Si dice menos de 10, algún organismo tenía su sitio caído. Se comprueba después.', {
-    x: 6.75, y: 6.5, w: 5.73, h: 0.4, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10, italic: true, color: GRIS,
+  s.addText(
+    'Cuatro pasos numerados en pantalla. Tarda unos minutos, sobre todo la precarga de los códigos: la Biblioteca del Congreso limita las descargas grandes y conviene bajarlos con calma una vez.',
+    { x: 7.2, y: 5.28, w: 4.9, h: 0.9, margin: 0, valign: 'top', fontFace: SANS, fontSize: 10.5, color: BLANCO, lineSpacingMultiple: 1.1 },
+  );
+  s.addText('Termina diciendo: Instalado. 10/10 fuentes responden.', {
+    x: 7.2, y: 6.22, w: 4.9, h: 0.32, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 10.5, bold: true, italic: true, color: BRONCE_CLARO,
+  });
+
+  s.addText('Se puede ejecutar las veces que haga falta: si ya está instalado, actualiza.', {
+    x: M, y: 6.82, w: 11.63, h: 0.4, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 10.5, italic: true, color: GRIS,
   });
 }
 
-// ── Paso 4 y 5: reiniciar y comprobar ──────────────────────────────────
+// ── Paso 2: reiniciar y comprobar ──────────────────────────────────────
 {
   const s = pres.addSlide();
   s.background = fondo(PERGAMINO);
-  tituloClaro(s, 'Pasos 4 y 5 · Reiniciar y comprobar', 'El reinicio es obligatorio: Claude carga los servidores al arrancar');
+  tituloClaro(s, 'Paso 2 · Reiniciar Claude', 'Es obligatorio: Claude carga los servidores al arrancar');
 
-  // Paso 4
-  s.addShape(pres.ShapeType.roundRect, { x: M, y: 1.98, w: 5.5, h: 2.55, rectRadius: 0.06, fill: { color: TINTA } });
-  numeral(s, 4, M + 0.32, 2.24, 0.4);
-  s.addText('Reiniciar Claude por completo', {
-    x: M + 0.88, y: 2.24, w: 4.3, h: 0.34, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 13.5, bold: true, color: BRONCE_CLARO,
-  });
+  s.addShape(pres.ShapeType.roundRect, { x: M, y: 1.98, w: 5.5, h: 2.3, rectRadius: 0.06, fill: { color: TINTA } });
   s.addText('Windows', {
-    x: M + 0.32, y: 2.84, w: 4.9, h: 0.26, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 11, bold: true, color: BLANCO,
+    x: M + 0.32, y: 2.24, w: 4.9, h: 0.28, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 12.5, bold: true, color: BRONCE_CLARO,
   });
-  s.addText('No basta con cerrar la ventana. Busca el ícono junto al reloj (puede estar tras la flecha ^), clic derecho → Quit. Después ábrelo de nuevo.', {
-    x: M + 0.32, y: 3.12, w: 4.9, h: 0.6, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10.5, color: GRIS_CLARO, lineSpacingMultiple: 1.05,
+  s.addText('No basta con cerrar la ventana. Busca el ícono junto al reloj, abajo a la derecha (puede estar tras la flecha ^), clic derecho → Quit. Después ábrelo de nuevo.', {
+    x: M + 0.32, y: 2.58, w: 4.9, h: 0.75, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11, color: BLANCO, lineSpacingMultiple: 1.1,
   });
   s.addText('macOS', {
-    x: M + 0.32, y: 3.76, w: 4.9, h: 0.26, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 11, bold: true, color: BLANCO,
+    x: M + 0.32, y: 3.38, w: 4.9, h: 0.28, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 12.5, bold: true, color: BRONCE_CLARO,
   });
   s.addText('Command + Q con Claude en primer plano. Cerrar con la bolita roja no basta.', {
-    x: M + 0.32, y: 4.04, w: 4.9, h: 0.4, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10.5, color: GRIS_CLARO,
+    x: M + 0.32, y: 3.72, w: 4.9, h: 0.45, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11, color: BLANCO,
   });
 
-  // Paso 5
-  numeral(s, 5, 6.75, 2.06, 0.4);
-  s.addText('Comprobar que funciona', {
-    x: 7.31, y: 2.06, w: 5.1, h: 0.34, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 13.5, bold: true, color: TINTA,
-  });
-  s.addText('Abre Claude y pregunta:', {
-    x: 6.75, y: 2.56, w: 5.6, h: 0.28, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 11, color: GRIS,
+  s.addText('Y listo. Para comprobarlo, pregúntale algo de derecho chileno:', {
+    x: M, y: 4.6, w: 5.5, h: 0.3, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11.5, color: TINTA,
   });
   s.addText('«¿Qué ha resuelto la Corte Suprema sobre nulidad del despido?»', {
-    x: 6.75, y: 2.86, w: 5.6, h: 0.4, margin: 0, valign: 'top',
-    fontFace: SERIF, fontSize: 14, color: TINTA,
+    x: M, y: 4.95, w: 5.5, h: 0.6, margin: 0, valign: 'top',
+    fontFace: SERIF, fontSize: 15, color: TINTA,
   });
 
-  s.addShape(pres.ShapeType.roundRect, { x: 6.75, y: 3.42, w: 5.73, h: 1.15, rectRadius: 0.06, fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 } });
+  s.addShape(pres.ShapeType.roundRect, {
+    x: 6.85, y: 1.98, w: 5.63, h: 1.5, rectRadius: 0.06,
+    fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 },
+  });
   s.addText('Funciona si…', {
-    x: 7.05, y: 3.6, w: 5.1, h: 0.26, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 11, bold: true, color: BRONCE,
+    x: 7.17, y: 2.2, w: 5.0, h: 0.28, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11.5, bold: true, color: BRONCE,
   });
   s.addText('…la respuesta trae roles, tribunales, fechas y enlaces concretos.', {
-    x: 7.05, y: 3.88, w: 5.1, h: 0.5, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10.5, color: GRIS,
-  });
-
-  s.addShape(pres.ShapeType.roundRect, { x: 6.75, y: 4.68, w: 5.73, h: 1.15, rectRadius: 0.06, fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 } });
-  s.addText('No funciona si…', {
-    x: 7.05, y: 4.86, w: 5.1, h: 0.26, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 11, bold: true, color: OXBLOOD,
-  });
-  s.addText('…explica en general qué es la nulidad del despido sin citar ni un fallo. Revisa el paso 4.', {
-    x: 7.05, y: 5.14, w: 5.1, h: 0.55, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10.5, color: GRIS,
-  });
-
-  s.addText('También desde la terminal:', {
-    x: M, y: 4.86, w: 5.5, h: 0.28, margin: 0, valign: 'top',
+    x: 7.17, y: 2.54, w: 5.0, h: 0.75, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 11, color: GRIS,
   });
-  comando(s, 'npm run salud', M, 5.18, 5.5, 0.5);
-  s.addText('Consulta las diez fuentes con preguntas de respuesta conocida y dice cuál responde y cuál no.', {
-    x: M, y: 5.8, w: 5.5, h: 0.5, margin: 0, valign: 'top',
-    fontFace: SANS, fontSize: 10, italic: true, color: GRIS,
+
+  s.addShape(pres.ShapeType.roundRect, {
+    x: 6.85, y: 3.62, w: 5.63, h: 1.5, rectRadius: 0.06,
+    fill: { color: BLANCO }, line: { color: 'E3DED3', width: 0.75 },
   });
+  s.addText('No funciona si…', {
+    x: 7.17, y: 3.84, w: 5.0, h: 0.28, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11.5, bold: true, color: OXBLOOD,
+  });
+  s.addText('…explica en general qué es la nulidad del despido sin citar ni un fallo. Casi siempre es que Claude no se cerró del todo.', {
+    x: 7.17, y: 4.18, w: 5.0, h: 0.8, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11, color: GRIS,
+  });
+
+  s.addText('También se puede comprobar desde la terminal:', {
+    x: 6.85, y: 5.4, w: 5.63, h: 0.3, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11, color: GRIS,
+  });
+  comando(s, 'cd ~/Responsa  &&  npm run salud', 6.85, 5.72, 5.63, 0.52);
 }
 
 // ── Problemas frecuentes ───────────────────────────────────────────────
 {
   const s = pres.addSlide();
   s.background = fondo(PERGAMINO);
-  tituloClaro(s, 'Problemas frecuentes', 'Los cinco que aparecen de verdad, y qué hacer con cada uno');
+  tituloClaro(s, 'Si algo no resulta', 'Los cuatro casos que aparecen de verdad');
 
   const problemas = [
-    ['Claude responde sin citar fuentes', 'Casi siempre es que no se reinició Claude por completo. En Windows hay que salir desde el ícono junto al reloj; en macOS con Command + Q. Si ya lo hiciste, vuelve a ejecutar el instalador.'],
-    ['«node no se reconoce como un comando»', 'Node.js no quedó instalado, o la terminal se abrió antes de instalarlo. Ciérrala, ábrela de nuevo y prueba node --version.'],
-    ['«Ley Chile alcanzó su límite de servicio»', 'La Biblioteca del Congreso limita las descargas grandes. Espera un minuto o ejecuta npm run precargar, que retoma sólo lo que falta.'],
+    ['Claude responde sin citar fuentes', 'No se reinició del todo. En Windows hay que salir desde el ícono junto al reloj; en macOS con Command + Q. Si ya lo hiciste, vuelve a pegar el comando de instalación.'],
+    ['«no se reconoce como un comando»', 'La terminal se abrió antes de que se instalara Node. Ciérrala, abre una nueva y pega el comando otra vez.'],
+    ['«Ley Chile alcanzó su límite de servicio»', 'La Biblioteca del Congreso limita las descargas grandes. Espera un minuto; el propio comando de instalación retoma sólo lo que falta.'],
     ['Una fuente aparece caída', 'Son sitios de organismos públicos y a veces se caen. No es la instalación: npm run salud dice cuál está fallando.'],
-    ['Cambiaste la carpeta de lugar', 'Claude sigue apuntando a la ruta antigua. Ejecuta node instalar.mjs desde la ubicación nueva.'],
   ];
 
   problemas.forEach(([t, d], i) => {
-    const y = 2.0 + i * 0.92;
-    numeral(s, i + 1, M, y + 0.04, 0.34);
+    const y = 2.08 + i * 1.08;
+    numeral(s, i + 1, M, y + 0.04, 0.36);
     s.addText(t, {
-      x: M + 0.5, y, w: 4.0, h: 0.3, margin: 0, valign: 'top',
-      fontFace: SANS, fontSize: 12, bold: true, color: TINTA,
+      x: M + 0.54, y, w: 4.1, h: 0.3, margin: 0, valign: 'top',
+      fontFace: SANS, fontSize: 12.5, bold: true, color: TINTA,
     });
     s.addText(d, {
-      x: M + 4.7, y: y - 0.02, w: 6.9, h: 0.78, margin: 0, valign: 'top',
-      fontFace: SANS, fontSize: 10.5, color: GRIS, lineSpacingMultiple: 1.05,
+      x: M + 4.8, y: y - 0.02, w: 6.8, h: 0.9, margin: 0, valign: 'top',
+      fontFace: SANS, fontSize: 11, color: GRIS, lineSpacingMultiple: 1.08,
     });
   });
 
-  s.addShape(pres.ShapeType.roundRect, { x: M, y: 6.5, w: 11.63, h: 0.62, rectRadius: 0.05, fill: { color: 'FDF7E8' } });
+  s.addShape(pres.ShapeType.roundRect, { x: M, y: 6.42, w: 11.63, h: 0.68, rectRadius: 0.05, fill: { color: 'FDF7E8' } });
   s.addText(
     'Cuando una fuente no responde, Claude debe decirlo y no rellenar el hueco con conocimiento propio. Si alguna vez entrega citas sin haberlas consultado, no las des por buenas.',
-    { x: M + 0.28, y: 6.5, w: 11.1, h: 0.62, margin: 0, valign: 'middle', fontFace: SANS, fontSize: 11, bold: true, color: OXBLOOD },
+    { x: M + 0.3, y: 6.42, w: 11.0, h: 0.68, margin: 0, valign: 'middle', fontFace: SANS, fontSize: 11, bold: true, color: OXBLOOD },
   );
 }
 
@@ -840,29 +714,32 @@ function etiquetaSO(s, txt, x, y) {
 {
   const s = pres.addSlide();
   s.background = fondo(PERGAMINO);
-  tituloClaro(s, 'Mantención', 'Cómo actualizar, comprobar que sigue en pie, y desinstalar');
+  tituloClaro(s, 'Mantención', 'Actualizar, comprobar que sigue en pie, y desinstalar');
 
-  s.addText('Comandos', {
+  s.addText('Desde la carpeta de Responsa', {
     x: M, y: 1.98, w: 6.0, h: 0.3, margin: 0, valign: 'top',
     fontFace: SANS, fontSize: 12.5, bold: true, color: TINTA,
   });
   const cmds = [
-    ['node instalar.mjs', 'Instala todo. Se puede repetir sin riesgo'],
     ['npm run salud', 'Comprueba que las diez fuentes respondan (segundos)'],
     ['npm run prueba', 'Banco completo, 68 comprobaciones (minutos)'],
     ['npm run auditoria', 'Verifica que los datos del código sigan siendo ciertos'],
     ['npm run precargar', 'Reintenta la precarga de códigos y leyes'],
   ];
   cmds.forEach(([c, d], i) => {
-    const y = 2.38 + i * 0.78;
-    comando(s, c, M, y, 3.3, 0.44);
+    const y = 2.4 + i * 0.82;
+    comando(s, c, M, y, 3.3, 0.46);
     s.addText(d, {
-      x: M + 3.5, y: y + 0.04, w: 2.9, h: 0.5, margin: 0, valign: 'top',
+      x: M + 3.5, y: y + 0.04, w: 2.9, h: 0.55, margin: 0, valign: 'top',
       fontFace: SANS, fontSize: 10, color: GRIS, lineSpacingMultiple: 1.0,
     });
   });
 
-  // Auditoría: por qué importa en una herramienta de citas.
+  s.addText('Para actualizar, se vuelve a pegar el mismo comando de instalación.', {
+    x: M, y: 5.82, w: 6.0, h: 0.4, margin: 0, valign: 'top',
+    fontFace: SANS, fontSize: 11, italic: true, color: GRIS,
+  });
+
   s.addShape(pres.ShapeType.roundRect, { x: 7.3, y: 1.98, w: 5.18, h: 2.1, rectRadius: 0.06, fill: { color: TINTA } });
   s.addText('Por qué existe la auditoría', {
     x: 7.65, y: 2.24, w: 4.5, h: 0.3, margin: 0, valign: 'top',
@@ -882,13 +759,13 @@ function etiquetaSO(s, txt, x, y) {
     fontFace: SANS, fontSize: 12.5, bold: true, color: TINTA,
   });
   const desinstalar = [
-    'Borrar la entrada "responsa" del archivo de configuración de Claude Desktop',
+    'Borrar la entrada "responsa" de la configuración de Claude Desktop',
     'Borrar la carpeta ~/.claude/skills/responsa',
     'Borrar la carpeta ~/.responsa (los datos guardados)',
-    'Borrar la carpeta de Responsa',
+    'Borrar la carpeta Responsa',
   ];
   desinstalar.forEach((t, i) => {
-    s.addText(`${i + 1}.  ${t}`, {
+    s.addText((i + 1) + '.  ' + t, {
       x: 7.3, y: 4.7 + i * 0.42, w: 5.18, h: 0.4, margin: 0, valign: 'top',
       fontFace: SANS, fontSize: 10.5, color: GRIS,
     });
