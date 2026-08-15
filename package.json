@@ -1,0 +1,25 @@
+{
+  "name": "responsa",
+  "version": "0.1.0",
+  "description": "Responsa — servidor MCP de fuentes jurídicas chilenas verificables: jurisprudencia judicial y constitucional, dictámenes, arbitraje, legislación, doctrina y estadísticas.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "responsa": "src/index.mjs"
+  },
+  "scripts": {
+    "instalar": "node instalar.mjs",
+    "start": "node src/index.mjs",
+    "prueba": "node scripts/prueba.mjs",
+    "salud": "node scripts/prueba.mjs rapida",
+    "precargar": "node scripts/precargar.mjs",
+    "auditoria": "node scripts/auditoria.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "pptxgenjs": "^4.0.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

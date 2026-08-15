@@ -1,0 +1,17 @@
+node_modules/
+
+# Caché de las fuentes: se regenera solo y pesa varios MB.
+.responsa/
+
+# Salida intermedia de la presentación.
+docs/Responsa.pdf
+
+# Basura de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Configuración local del editor
+.vscode/
+.idea/
+*.log
