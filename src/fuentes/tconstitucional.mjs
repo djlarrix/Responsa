@@ -89,7 +89,7 @@ function normalizar(s) {
  * @param {string} [p.hasta] YYYY-MM-DD
  * @param {boolean} [p.textoCompleto]
  */
-export async function buscarSentenciasTC({ consulta, pagina = 1, desde, hasta, textoCompleto = true }) {
+export async function buscarSentenciasTC({ consulta, pagina = 1, desde, hasta, textoCompleto = false }) {
   if (!consulta?.trim()) throw new Error('Falta la consulta.');
 
   const rango = desde || hasta ? { from: desde ?? null, to: hasta ?? null } : null;
@@ -110,7 +110,17 @@ export async function buscarSentenciasTC({ consulta, pagina = 1, desde, hasta, t
     if (!j.data) throw new Error('El Tribunal Constitucional devolvió una respuesta sin `data`: su buscador cambió.');
 
     const resultados = (j.data.results ?? []).map(normalizar);
-    if (!textoCompleto) for (const r of resultados) r.texto = r.texto.slice(0, 1200) + (r.texto.length > 1200 ? '…' : '');
+    // Las sentencias del TC son PDF completos: cinco llegaban a ~72.000 tokens.
+  // Los párrafos coincidentes son lo que sirve para citar; el resto se pide
+  // aparte cuando hace falta.
+  if (textoCompleto !== true) {
+    for (const r of resultados) {
+      if (r.texto.length > 1200) {
+        r.texto = r.texto.slice(0, 1200) + '…';
+        r.texto_recortado = true;
+      }
+    }
+  }
 
     return {
       total: j.data.count ?? 0,

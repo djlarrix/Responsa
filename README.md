@@ -63,7 +63,7 @@ Algunas hacen la diferencia frente a un buscador de texto:
 
 **Legislación** — Ley Chile (BCN). Más de 258.000 normas, con marca de derogación y fecha de versión.
 
-**Doctrina** — Crossref, restringido a los ISSN de nueve revistas jurídicas chilenas. Sin esa restricción, una consulta en español arrastra doctrina colombiana y brasileña; con ella, más un filtro de solapamiento de términos, los resultados vienen al caso.
+**Doctrina** — Crossref, restringido a los ISSN de nueve revistas jurídicas chilenas, y **verificada contra OpenAlex**: sólo se devuelven trabajos de acceso abierto cuyo enlace al PDF completo responde al momento de la consulta. Un DOI puede llevar a una página de pago o caída, y una fuente que no se puede abrir no sirve para corroborar nada. Lo que no pasa esa comprobación se descarta y se informa cuántos fueron.
 
 **Estadísticas** — `estadisticaservices.pjud.cl`, API oficial del Subdepartamento de Estadísticas de la CAPJ. 137 endpoints, sin autenticación, datos desde 2015.
 
@@ -183,6 +183,23 @@ Si hiciera falta automatizar consulta de causas, las vías legítimas son "Mis C
 ### Por qué el arbitraje se enlaza y no se copia
 
 El CAM Santiago declara que los laudos son de su propiedad y que reproducirlos en sitios externos requiere autorización previa. El módulo indexa y enlaza al PDF oficial, pero no descarga ni reproduce el contenido.
+
+## Consumo de contexto
+
+Las fuentes devuelven documentos enteros, y devolverlos tal cual llena el contexto de la conversación. Las herramientas están calibradas para entregar lo justo:
+
+| | antes | ahora |
+|---|---|---|
+| `ver_norma` sin artículo (Código Civil) | 207.000 tokens | 900 |
+| `buscar_jurisprudencia_constitucional` | 72.000 | 9.100 |
+| `buscar_jurisprudencia_en_todos` | 67.000 | 10.000 |
+| `buscar_jurisprudencia` | 24.600 | 6.700 |
+| `listar_materias_arbitrales` | 17.700 | 1.300 |
+| **una sesión con las doce herramientas** | **444.000** | **49.500** |
+
+El criterio: **buscar devuelve lo necesario para decidir, no el documento entero.** Cada fallo llega con un extracto y con los pasajes que coincidieron con la consulta, que es lo que sirve para elegir cuál leer; el texto íntegro se pide después con `ver_sentencia`. Y `ver_norma` sin `articulo` devuelve el índice de números, no los 2.841 artículos del Código Civil.
+
+Quien necesite los textos completos los sigue teniendo: `texto_completo: true` en la búsqueda.
 
 ## Fiabilidad
 

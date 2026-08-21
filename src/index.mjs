@@ -61,7 +61,7 @@ const HERRAMIENTAS = [
         orden: { type: 'string', enum: ['recientes', 'relevancia'], description: 'Default recientes.' },
         limite: { type: 'number', description: 'Cuántos fallos traer (1-50). Default 5.' },
         pagina: { type: 'number', description: 'Página de resultados, empieza en 1.' },
-        texto_completo: { type: 'boolean', description: 'false para recortar el texto de cada fallo. Default true.' },
+        texto_completo: { type: 'boolean', description: 'Default false: cada fallo llega con extracto y `pasajes_coincidentes`, que es lo que sirve para decidir. Pon true sólo si necesitas leer los fallos íntegros, que cuesta mucho contexto; para uno concreto usa `ver_sentencia`.' },
       },
     },
   },
@@ -84,7 +84,7 @@ const HERRAMIENTAS = [
         desde: { type: 'string', description: 'Fecha mínima, YYYY-MM-DD.' },
         hasta: { type: 'string', description: 'Fecha máxima, YYYY-MM-DD.' },
         limite: { type: 'number', description: 'Total de fallos a devolver. Default 10.' },
-        texto_completo: { type: 'boolean', description: 'Default true.' },
+        texto_completo: { type: 'boolean', description: 'Default false: llega extracto más los párrafos coincidentes.' },
       },
     },
   },
@@ -138,9 +138,11 @@ const HERRAMIENTAS = [
   {
     name: 'ver_norma',
     description:
-      'Devuelve el texto oficial vigente de una norma de Ley Chile. Si se indica `articulo`, ' +
-      'devuelve sólo ese artículo. Acepta idNorma o una cita como "Ley 19.496" o "Código Civil". ' +
-      'Úsala para citar texto legal literal en vez de reproducirlo de memoria.',
+      'Devuelve el texto oficial vigente de un artículo de una norma de Ley Chile. Acepta idNorma o ' +
+      'una cita como "Ley 19.496" o "Código Civil". Úsala para citar texto legal literal en vez de ' +
+      'reproducirlo de memoria. ' +
+      'INDICA SIEMPRE `articulo` si sabes cuál necesitas. Sin él sólo devuelve el índice de números ' +
+      'de artículo, porque el articulado completo de un código no cabe en el contexto.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -265,7 +267,10 @@ const HERRAMIENTAS = [
   },
   {
     name: 'listar_materias_arbitrales',
-    description: 'Lista las materias (o árbitros) indexadas en los laudos del CAM Santiago. Útil para saber qué términos usar.',
+    description:
+      'Cuenta las materias y los árbitros indexados en los laudos del CAM Santiago y devuelve una ' +
+      'muestra. Para encontrar una materia concreta usa `buscar_laudos_arbitrales`, que busca en todo ' +
+      'el índice.',
     inputSchema: {
       type: 'object',
       properties: { por: { type: 'string', enum: ['materia', 'arbitro'], description: 'Default materia.' } },
@@ -305,7 +310,7 @@ const HERRAMIENTAS = [
         desde: { type: 'string', description: 'Fecha mínima, YYYY-MM-DD.' },
         hasta: { type: 'string', description: 'Fecha máxima, YYYY-MM-DD.' },
         pagina: { type: 'number', description: 'Página, empieza en 1.' },
-        texto_completo: { type: 'boolean', description: 'Default true.' },
+        texto_completo: { type: 'boolean', description: 'Default false: llega extracto más los párrafos coincidentes.' },
       },
       required: ['consulta'],
     },

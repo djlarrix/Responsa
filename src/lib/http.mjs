@@ -22,6 +22,7 @@ const RITMO = {
   'www.leychile.cl': 2500,
   'servicios-leychile.bcn.cl': 2500,
   'api.crossref.org': 250,
+  'api.openalex.org': 250,
   'www.contraloria.cl': 400,
   'juris.pjud.cl': 300,
   // Construir el índice pide doce portadillas por año; sin freno, dt.gob.cl

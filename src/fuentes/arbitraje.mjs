@@ -93,11 +93,16 @@ export async function buscarLaudos({ consulta, por = 'materia', limite = 10 }) {
 /** Lista las materias (o árbitros) disponibles en el índice del CAM. */
 export async function listarMateriasArbitrales(por = 'materia') {
   const filas = await indice(por);
+  // El índice completo son 781 materias: devolverlo entero cuesta ~18.000
+  // tokens y casi nunca se necesita. Va una muestra, y para encontrar algo
+  // concreto está `buscar_laudos_arbitrales`.
+  const TOPE = 120;
   return {
     por,
     total: filas.length,
     total_laudos: filas.reduce((n, f) => n + f.laudos.length, 0),
-    entradas: filas.map((f) => ({ [por]: f[por], laudos: f.laudos.length })),
+    muestra: filas.slice(0, TOPE).map((f) => f[por]),
+    ...(filas.length > TOPE ? { nota: `Se muestran ${TOPE} de ${filas.length}. Para encontrar una materia concreta usa buscar_laudos_arbitrales, que busca en todo el índice.` } : {}),
     fuente: INDICES[por],
   };
 }

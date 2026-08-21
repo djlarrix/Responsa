@@ -18,6 +18,9 @@ import { conCache, invalidar } from '../lib/cache.mjs';
 
 const BASE = 'https://juris.pjud.cl';
 
+/** Extracto por fallo cuando no se pidió el texto íntegro. */
+const TOPE_EXTRACTO = 1200;
+
 /** id_buscador verificado por buscador (leído de `var id_buscador_activo` en cada página). */
 export const BUSCADORES = {
   corte_suprema: { slug: 'Corte_Suprema', id: '528', nombre: 'Corte Suprema' },
@@ -258,7 +261,7 @@ function normalizar(d, nombreBuscador, clave) {
     // Cita ya armada por el propio buscador del Poder Judicial.
     cita: d.cita_bibliografica ?? '',
     normas_aplicadas: aplicadas,
-    normas_citadas: aplicadas.length ? [] : normasCitadas(d.TEXTO_ETIQUETADO_t),
+    ...(aplicadas.length ? {} : { normas_citadas: normasCitadas(d.TEXTO_ETIQUETADO_t) }),
     paginas: d.sent__npages_i ?? null,
     // Permalinks estables del buscador. Abrirlos pide cuenta gratuita en
     // juris.pjud.cl; el texto completo ya viene en `texto`, así que la
@@ -360,8 +363,17 @@ export async function buscarSentencias(p = {}) {
     r.pasajes_coincidentes = fragmentos(json.highlighting, r.id);
     return r;
   });
-  if (p.textoCompleto === false) {
-    for (const r of resultados) r.texto = r.texto.slice(0, 1200) + (r.texto.length > 1200 ? '…' : '');
+  // El texto íntegro de cinco fallos son ~25.000 tokens, y para decidir cuál
+  // leer basta con los pasajes que coincidieron. Por eso el default es
+  // recortado: quien necesite el fallo completo lo pide con `ver_sentencia` o
+  // con texto_completo: true.
+  if (p.textoCompleto !== true) {
+    for (const r of resultados) {
+      if (r.texto.length > TOPE_EXTRACTO) {
+        r.texto = r.texto.slice(0, TOPE_EXTRACTO) + '…';
+        r.texto_recortado = true;
+      }
+    }
   }
 
   return {

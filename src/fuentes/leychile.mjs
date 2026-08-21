@@ -250,11 +250,24 @@ function buscarArticulo(articulos, buscado) {
 export async function verNorma(idNorma, articulo) {
   const n = await normaCruda(idNorma);
   if (!articulo) {
+    // Devolver los 2.841 artículos del Código Civil con un extracto de cada uno
+    // costaba unos 200.000 tokens: una sola llamada podía llenar el contexto.
+    // El índice va como lista de números, que es lo que se necesita para pedir
+    // el artículo correcto en la llamada siguiente.
+    const { articulos, ...meta } = n;
+    // Sin deduplicar, el índice del Código Civil parte "1, 2, 1, 2, 3…" porque
+    // conviven los artículos del decreto y los del código que éste fija.
+    const numeros = [...new Set(articulos.map((a) => partesDelNombre(a.numero).numero))];
+    const derogados = articulos.filter((a) => a.derogado).map((a) => partesDelNombre(a.numero).numero);
+    const TOPE = 400;
     return {
-      ...n,
-      total_articulos: n.articulos.length,
-      articulos: n.articulos.map((a) => ({ numero: a.numero, derogado: a.derogado, extracto: a.texto.slice(0, 180) })),
-      nota: 'Para el texto completo de un artículo, vuelve a llamar indicando `articulo`.',
+      ...meta,
+      total_articulos: articulos.length,
+      indice_articulos: numeros.slice(0, TOPE).join(', ') + (numeros.length > TOPE ? `, … (${numeros.length - TOPE} más)` : ''),
+      ...(derogados.length ? { articulos_derogados: derogados.slice(0, 60).join(', ') } : {}),
+      nota:
+        'Este es sólo el índice. Para leer un artículo, vuelve a llamar con `articulo` ' +
+        '(por ejemplo articulo: "1545"). No cites ningún artículo sin haber traído su texto.',
     };
   }
   const { hit, homonimos } = buscarArticulo(n.articulos, articulo);
