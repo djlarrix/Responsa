@@ -448,10 +448,12 @@ const fondo = (color) => ({ fill: color });
     ['«Arbitrajes sobre contratos de construcción»', 'Laudos del CAM Santiago, con enlace al PDF'],
     ['«¿Cuánto demora un juicio laboral en Valparaíso?»', 'Estadísticas oficiales del Poder Judicial'],
     ['«¿A cuánto equivalen 50 UTM hoy?»', 'Valores del Banco Central y del SII'],
+    ['«¿Qué tan posible es que prospere este despido?»', 'Busca jurisprudencia aunque no se la nombren'],
+    ['«Déjame los documentos en una carpeta»', 'PDF y Word de lo citado, en Descargas, con índice'],
   ];
 
   ejemplos.forEach(([q, fuente], i) => {
-    const y = 1.92 + i * 0.68;
+    const y = 1.80 + i * 0.53;
     s.addText(q, {
       x: M, y, w: 6.9, h: 0.34, margin: 0,
       fontFace: SERIF, fontSize: 14.5, color: BLANCO,
@@ -799,7 +801,7 @@ function etiquetaSO(s, txt, x, y) {
 
   const cifras = [
     ['10', 'fuentes oficiales'],
-    ['20', 'herramientas'],
+    ['21', 'herramientas'],
     ['0', 'bases de suscripción'],
   ];
   cifras.forEach(([n, t], i) => {
