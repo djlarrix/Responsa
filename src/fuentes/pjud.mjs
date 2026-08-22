@@ -219,6 +219,56 @@ function tribunalYRol(d, clave, nombreBuscador) {
   return { tribunal: nombreBuscador, rol: sup || ape || '', sala: d.gls_sala_sup_s ?? '' };
 }
 
+/**
+ * Cuánto aporta un fallo a una investigación jurídica.
+ *
+ * Medido sobre 100 fallos reales de la Corte Suprema (21-ago-2026): un tercio
+ * son declaraciones de inadmisibilidad. No resuelven el asunto, no fijan
+ * criterio y, ordenados por fecha, copan las primeras posiciones. Un abogado
+ * que busca cómo se resuelve un tema no quiere leerlos.
+ *
+ * Se lee `resultado_recurso_sup_s`, que el propio Poder Judicial rellena con
+ * la parte resolutiva. La clasificación NO descarta nada: reordena y avisa,
+ * porque un inadmisible puede ser justo lo que se busca (por ejemplo, para
+ * mostrar que la Corte no ha entrado al fondo de una materia).
+ */
+function valorDoctrinal(resultado) {
+  const r = (resultado ?? '')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+  if (!r.trim()) return null; // Los juzgados no llenan este campo.
+
+  // Rechazos en limine: el art. 782 del CPC permite rechazar la casación sin
+  // entrar al fondo, y eso no es un pronunciamiento sobre el derecho.
+  if (/MANIFIESTA FALTA DE FUNDAMENTO|NO ES MATERIA PROPIA|ASUNTO CASUISTICO|MATERIA UNIFICADA O SIN DISPE/.test(r)) {
+    return 'no entra al fondo';
+  }
+  // La Corte fija criterio: unificación acogida, casación en el fondo acogida,
+  // sentencia de reemplazo o casación de oficio.
+  if (
+    /ACOGE.*UNIFICACION|ACOGID[AO].*UNIFICACION/.test(r) ||
+    /SENTENCIA DE REEMPLAZO/.test(r) ||
+    /(ACOGID[AO]|\bCASA\b).*(CASACION )?(EN EL )?FONDO/.test(r) ||
+    /(\bCASA\b|ANULA) .*DE OFICIO/.test(r)
+  ) {
+    return 'fija doctrina';
+  }
+  // Hay pronunciamiento sobre el asunto aunque el recurso no prospere.
+  if (/RECHAZ|ACOGID[AO]|ACOGE|CONFIRMA|REVOCA|INVALIDA|ANULA/.test(r)) {
+    return 'resuelve el fondo';
+  }
+  // Inadmisibilidades y terminaciones anticipadas sin pronunciamiento alguno.
+  if (/INADMISIBLE|TENGASE POR NO PRESENTAD|DESIERT|ABANDONAD|EXTEMPORANE|DESISTIMIENTO|INCOMPETEN|NO HA LUGAR A TRAMITAR/.test(r)) {
+    return 'no entra al fondo';
+  }
+  return null;
+}
+
+/** Orden de preferencia al reordenar resultados. Menor = se muestra antes. */
+const PESO_APORTE = { 'fija doctrina': 0, 'resuelve el fondo': 1, 'no entra al fondo': 3 };
+const pesoDe = (a) => PESO_APORTE[a] ?? 2; // Sin dato (juzgados): ni premiado ni castigado.
+
 function normalizar(d, nombreBuscador, clave) {
   const texto = aTextoPlano(d.texto_sentencia ?? d.texto_sentencia_preview ?? '');
   const anonimizado = texto === 'ANONIMIZADO' || d.caratulado_s === 'ANONIMIZADO';
@@ -236,6 +286,9 @@ function normalizar(d, nombreBuscador, clave) {
     caratulado: d.caratulado_s ?? '',
     tipo_recurso: d.gls_tip_recurso_sup_s ?? '',
     resultado: d.resultado_recurso_sup_s ?? '',
+    // Cuánto sirve para investigar. Ver valorDoctrinal(): un tercio de los
+    // fallos de la Suprema son inadmisibilidades que no resuelven nada.
+    aporte: valorDoctrinal(d.resultado_recurso_sup_s) ?? undefined,
     materia: d.gls_libro_sup_s ?? '',
     descriptores: d.gls_descriptor_ss ?? [],
     ministros: d.gls_ministro_ss ?? (d.sent__gls_int_firma_sup_s ?? '').split(',').filter(Boolean),
@@ -273,13 +326,15 @@ function normalizar(d, nombreBuscador, clave) {
 }
 
 /** Ejecuta el POST de búsqueda con una sesión dada. */
-function consultar(s, p, limite, pagina) {
+function consultar(s, p, filas, pagina, factor = 1) {
   const cuerpo = new URLSearchParams({
     _token: s.token,
     id_buscador: s.id,
     filtros: armarFiltros(p),
-    numero_filas_paginacion: String(limite),
-    offset_paginacion: String((pagina - 1) * limite),
+    numero_filas_paginacion: String(filas),
+    // Con sobre-consulta cada página cubre su propia ventana de `filas`
+    // resultados, así que la paginación sigue sin solaparse.
+    offset_paginacion: String((pagina - 1) * filas),
     orden: p.orden === 'relevancia' ? 'relevancia' : 'recientes',
     personalizacion: 'false',
   });
@@ -332,13 +387,22 @@ export async function buscarSentencias(p = {}) {
   // El token CSRF caduca antes que su TTL en caché (Laravel rota la sesión).
   // Si la primera consulta falla, se descarta la sesión y se reintenta con una
   // nueva: sin esto, el buscador queda inservible hasta que venza el caché.
+  // Se pide más de lo que se va a devolver para poder elegir. El PJUD ordena
+  // por fecha, y como un tercio de lo reciente son inadmisibilidades, pedir
+  // justo `limite` obliga a mostrar lo que venga. Pidiendo el triple se
+  // seleccionan los fallos que sí resuelven. No encarece el contexto: lo que
+  // cuesta tokens es lo que se devuelve, no lo que se revisa.
+  const conceptual = Boolean(p.texto || p.literal || p.todas || p.algunas || p.numArt);
+  const factor = conceptual && p.ordenarPorAporte !== false ? 3 : 1;
+  const pedidos = Math.min(limite * factor, 30);
+
   let s = await sesion(tribunal);
-  let res = await consultar(s, p, limite, pagina);
+  let res = await consultar(s, p, pedidos, pagina, factor);
 
   if (!res.ok || res.status === 419) {
     await invalidar(claveSesion(s.slug));
     s = await sesion(tribunal);
-    res = await consultar(s, p, limite, pagina);
+    res = await consultar(s, p, pedidos, pagina, factor);
   }
 
   if (!res.ok) throw new Error(`El buscador del PJUD respondió HTTP ${res.status}. ${res.texto.slice(0, 200)}`);
@@ -358,19 +422,34 @@ export async function buscarSentencias(p = {}) {
   }
 
   const docs = json.response.docs ?? [];
-  const resultados = docs.map((d) => {
+  let resultados = docs.map((d) => {
     const r = normalizar(d, s.nombre, tribunal);
     r.pasajes_coincidentes = fragmentos(json.highlighting, r.id);
     return r;
   });
+
+  // Se prefieren los fallos que resuelven, conservando el orden por fecha
+  // dentro de cada grupo (sort estable en Node ≥ 11).
+  const revisados = resultados.length;
+  let apartados = 0;
+  if (factor > 1) {
+    resultados.sort((a, b) => pesoDe(a.aporte) - pesoDe(b.aporte));
+    apartados = resultados.slice(limite).filter((r) => r.aporte === 'no entra al fondo').length;
+    resultados = resultados.slice(0, limite);
+  }
+
   // El texto íntegro de cinco fallos son ~25.000 tokens, y para decidir cuál
   // leer basta con los pasajes que coincidieron. Por eso el default es
   // recortado: quien necesite el fallo completo lo pide con `ver_sentencia` o
   // con texto_completo: true.
   if (p.textoCompleto !== true) {
     for (const r of resultados) {
-      if (r.texto.length > TOPE_EXTRACTO) {
-        r.texto = r.texto.slice(0, TOPE_EXTRACTO) + '…';
+      // Cuando hay pasajes coincidentes, el arranque del fallo aporta poco:
+      // son los VISTOS, las partes y la historia procesal. Basta con lo justo
+      // para situar el caso; lo que decide es el pasaje.
+      const tope = r.pasajes_coincidentes?.length ? 500 : TOPE_EXTRACTO;
+      if (r.texto.length > tope) {
+        r.texto = r.texto.slice(0, tope) + '…';
         r.texto_recortado = true;
       }
     }
@@ -381,6 +460,14 @@ export async function buscarSentencias(p = {}) {
     pagina,
     mostrados: resultados.length,
     tribunal: s.nombre,
+    ...(factor > 1
+      ? {
+          seleccion: `Se revisaron ${revisados} fallos y se muestran los ${resultados.length} que más aportan.`,
+          ...(apartados
+            ? { quedaron_fuera_por_no_entrar_al_fondo: apartados }
+            : {}),
+        }
+      : {}),
     resultados,
     como_verificar:
       `Cada fallo trae su permalink en \`url\` (buscador del Poder Judicial; abrirlo pide cuenta gratuita). ` +
@@ -439,7 +526,16 @@ export async function verSentencia({ rol, era, tribunal = 'corte_suprema' }) {
     throw new Error('Indica `rol` y `era` (año del rol). Por ejemplo: rol "34956", era "2026".');
   }
 
-  const r = await buscarSentencias({ tribunal, rol: String(rol), era: String(era), limite: 5 });
+  // `textoCompleto` es imprescindible aquí: esta función existe para leer el
+  // fallo entero. Sin él heredaba el recorte de la búsqueda y devolvía 1.200
+  // caracteres bajo la promesa de "texto completo".
+  const r = await buscarSentencias({
+    tribunal,
+    rol: String(rol),
+    era: String(era),
+    limite: 5,
+    textoCompleto: true,
+  });
   if (!r.resultados.length) return { encontrada: false, mensaje: `Sin resultados para rol ${rol}-${era} en ${r.tribunal}.` };
   return { encontrada: true, tribunal: r.tribunal, ...r.resultados[0], como_verificar: r.como_verificar };
 }

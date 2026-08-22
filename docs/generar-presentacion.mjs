@@ -367,7 +367,7 @@ const fondo = (color) => ({ fill: color });
 
   const pasos = [
     ['Usted pregunta', 'En lenguaje natural, como se lo diría a un colega.\n\n«¿Qué ha resuelto la Corte Suprema sobre nulidad del despido?»'],
-    ['Claude elige', 'Entre las veinte herramientas disponibles, selecciona las que corresponden. Una consulta puede combinar varias: ubicar la norma, leer su texto, traer los fallos y sumar el criterio administrativo.'],
+    ['Claude elige', 'Entre las veintiuna herramientas disponibles, selecciona las que corresponden. Una consulta puede combinar varias: ubicar la norma, leer su texto, traer los fallos y sumar el criterio administrativo.'],
     ['Responsa consulta', 'Va a las fuentes oficiales en vivo. No tiene una copia propia de las leyes: pregunta a la BCN, al Poder Judicial, a la Contraloría.'],
     ['Usted recibe', 'La respuesta con rol, tribunal, fecha, enlace y texto. Y si algo no se pudo verificar, se dice.'],
   ];

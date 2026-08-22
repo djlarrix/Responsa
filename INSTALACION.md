@@ -225,7 +225,7 @@ Consulta las diez fuentes con preguntas de respuesta conocida y dice cuál respo
 
 ## 8. Uso diario
 
-No hay que aprender comandos ni recordar nombres de herramientas. Se pregunta en lenguaje natural y Claude elige, entre las veinte herramientas disponibles, las que corresponden.
+No hay que aprender comandos ni recordar nombres de herramientas. Se pregunta en lenguaje natural y Claude elige, entre las veintiuna herramientas disponibles, las que corresponden.
 
 Ejemplos de lo que entiende:
 

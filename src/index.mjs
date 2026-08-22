@@ -24,6 +24,7 @@ import { consultarEstadistica, CONSULTAS_DISPONIBLES, CORTES, COMPETENCIAS } fro
 import { enlaceConsultaCausas, COMPETENCIAS_OJV } from './fuentes/causas.mjs';
 import { buscarLaudos, listarMateriasArbitrales } from './fuentes/arbitraje.mjs';
 import { valorEconomico, INDICADORES_DISPONIBLES } from './fuentes/valores.mjs';
+import { armarExpediente, TIPOS_DOCUMENTO } from './fuentes/expediente.mjs';
 import { verificarFuentes } from './lib/salud.mjs';
 
 const TRIBUNALES = Object.keys(BUSCADORES);
@@ -84,7 +85,7 @@ const HERRAMIENTAS = [
         desde: { type: 'string', description: 'Fecha mínima, YYYY-MM-DD.' },
         hasta: { type: 'string', description: 'Fecha máxima, YYYY-MM-DD.' },
         limite: { type: 'number', description: 'Total de fallos a devolver. Default 10.' },
-        texto_completo: { type: 'boolean', description: 'Default false: llega extracto más los párrafos coincidentes.' },
+        texto_completo: { type: 'boolean', description: 'Default false: llegan los 4 párrafos coincidentes más pertinentes y un extracto, que es lo que se necesita para citar. Ponlo en true sólo para leer los fallos enteros, que cuesta el triple de contexto; el PDF completo está en `pdf`.' },
       },
     },
   },
@@ -119,6 +120,48 @@ const HERRAMIENTAS = [
         tribunal: { type: 'string', enum: TRIBUNALES, description: 'Default corte_suprema.' },
       },
       required: ['rol', 'era'],
+    },
+  },
+  {
+    name: 'guardar_respaldo',
+    description:
+      'Deja en una carpeta de Descargas los documentos fuente de lo que se citó, en PDF cuando el ' +
+      'organismo lo publica y en Word cuando no, con la procedencia y el enlace impresos en cada uno. ' +
+      'Sirve para que el abogado compruebe las citas y las archive en su expediente. ' +
+      'NO la uses por iniciativa propia: pregúntale antes al usuario si quiere la carpeta, y sólo ' +
+      'llámala si dice que sí. Los identificadores salen de los resultados de búsqueda que ya tienes; ' +
+      'no inventes ninguno.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        asunto: {
+          type: 'string',
+          description: 'Rótulo de la carpeta, p.ej. "Nulidad del despido". Va en el nombre del directorio.',
+        },
+        consulta: { type: 'string', description: 'La pregunta que originó la investigación. Queda en el índice.' },
+        documentos: {
+          type: 'array',
+          description: 'Los documentos a respaldar. Cada uno con su `tipo` y los identificadores de ese tipo.',
+          items: {
+            type: 'object',
+            properties: {
+              tipo: { type: 'string', enum: TIPOS_DOCUMENTO, description: 'De qué fuente viene el documento.' },
+              titulo: { type: 'string', description: 'Cómo se llama en tu respuesta. Rotula el archivo y el índice.' },
+              rol: { type: 'string', description: 'sentencia_pjud: rol completo ("61852-2024") o sólo el número con `era`.' },
+              era: { type: 'string', description: 'sentencia_pjud: año del rol, si `rol` viene sin él.' },
+              tribunal: { type: 'string', enum: TRIBUNALES, description: 'sentencia_pjud: default corte_suprema.' },
+              pdf: { type: 'string', description: 'sentencia_tc y laudo_cam: el campo `pdf` del resultado.' },
+              enlace_libre: { type: 'string', description: 'doctrina: el campo `enlace_libre` del resultado, no el DOI.' },
+              unid: { type: 'string', description: 'dictamen_contraloria: el `unid` de 32 caracteres.' },
+              id: { type: 'string', description: 'dictamen_dt: el `id` numérico del dictamen.' },
+              idNorma: { type: 'string', description: 'norma: el idNorma de Ley Chile.' },
+              articulo: { type: 'string', description: 'norma: artículo concreto. Sin él sólo se guarda la ficha.' },
+            },
+            required: ['tipo'],
+          },
+        },
+      },
+      required: ['asunto', 'documentos'],
     },
   },
   {
@@ -470,6 +513,9 @@ async function ejecutar(name, a) {
 
     case 'ver_sentencia':
       return verSentencia({ rol: a.rol, era: a.era, tribunal: a.tribunal });
+
+    case 'guardar_respaldo':
+      return armarExpediente({ asunto: a.asunto, documentos: a.documentos, consulta: a.consulta });
 
     case 'buscar_ley':
       return buscarNormas(a.consulta, a.limite ?? 8);

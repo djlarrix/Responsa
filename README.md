@@ -31,6 +31,7 @@ Todas las fuentes son **públicas y gratuitas**. No se conecta ninguna base de s
 | `listar_materias_arbitrales` | Las 781 materias y 130 árbitros indexados del CAM |
 | `estadisticas_judiciales` | Cuánto demoran las causas, cuántas ingresan y cómo terminan |
 | `valor_economico` | UF, UTM, IPC, dólar, hoy o a una fecha pasada |
+| `guardar_respaldo` | Deja los documentos citados en una carpeta de Descargas, en PDF y en Word |
 | `consultar_causa` | Enlace y pasos para consultar una causa en la OJV (no automatizado) |
 | `listar_fuentes` | Qué tribunales, cortes, revistas, estadísticas y valores hay |
 | `verificar_fuentes` | Chequeo de salud de las diez fuentes externas |
@@ -48,6 +49,8 @@ Algunas hacen la diferencia frente a un buscador de texto:
 **`buscar_laudos_arbitrales`** cubre un punto ciego real: en materias comerciales, societarias y de construcción, buena parte de los conflictos se resuelve en arbitraje y nunca llega a los tribunales ordinarios. Son 1.812 laudos con enlace al PDF oficial.
 
 **`estadisticas_judiciales`** responde lo que ninguna base de jurisprudencia contesta: cuánto demora realmente un juicio. Un laboral en la C.A. de Valparaíso promedió 222 días en 2024; la Corte Suprema, 92.
+
+**`guardar_respaldo`** deja en Descargas una carpeta con el documento fuente de cada cosa citada, más un índice: PDF cuando el organismo lo publica (Tribunal Constitucional, CAM, doctrina de acceso abierto) y Word generado desde el texto oficial cuando no lo hay (Poder Judicial, Dirección del Trabajo, Contraloría, Ley Chile), con la procedencia y el enlace impresos en cada archivo. Lo que no se pudo traer queda anotado como pendiente en vez de faltar en silencio. Claude pregunta antes; nunca escribe en el disco por iniciativa propia.
 
 **`verificar_fuentes`** consulta las diez fuentes con preguntas de respuesta conocida y avisa cuál se rompió. La forma peligrosa de fallar no es el error: es el resultado vacío que se lee como "no hay jurisprudencia sobre esto".
 
@@ -190,16 +193,30 @@ Las fuentes devuelven documentos enteros, y devolverlos tal cual llena el contex
 
 | | antes | ahora |
 |---|---|---|
-| `ver_norma` sin artículo (Código Civil) | 207.000 tokens | 900 |
-| `buscar_jurisprudencia_constitucional` | 72.000 | 9.100 |
-| `buscar_jurisprudencia_en_todos` | 67.000 | 10.000 |
-| `buscar_jurisprudencia` | 24.600 | 6.700 |
-| `listar_materias_arbitrales` | 17.700 | 1.300 |
-| **una sesión con las doce herramientas** | **444.000** | **49.500** |
+| `ver_norma` sin artículo (Código Civil) | 207.000 tokens | 860 |
+| `buscar_jurisprudencia_constitucional` | 72.000 | 6.300 |
+| `buscar_jurisprudencia_en_todos` | 67.000 | 6.400 |
+| `buscar_jurisprudencia` | 24.600 | 5.100 |
+| `listar_materias_arbitrales` | 17.700 | 1.100 |
+| **una sesión con las doce herramientas** | **444.000** | **29.200** |
 
 El criterio: **buscar devuelve lo necesario para decidir, no el documento entero.** Cada fallo llega con un extracto y con los pasajes que coincidieron con la consulta, que es lo que sirve para elegir cuál leer; el texto íntegro se pide después con `ver_sentencia`. Y `ver_norma` sin `articulo` devuelve el índice de números, no los 2.841 artículos del Código Civil.
 
-Quien necesite los textos completos los sigue teniendo: `texto_completo: true` en la búsqueda.
+Cuando hay pasajes coincidentes el extracto se recorta más todavía, porque el arranque de una sentencia son los vistos y la individualización de las partes: lo que decide está en el pasaje. En el Tribunal Constitucional se devuelven los cuatro párrafos coincidentes más pertinentes en vez de los ocho, y el resto está en el PDF.
+
+Quien necesite los textos completos los sigue teniendo: `texto_completo: true` en la búsqueda, o `ver_sentencia` para un fallo concreto.
+
+## Selección por aporte doctrinal
+
+Un tercio de lo que devuelve la Corte Suprema son declaraciones de inadmisibilidad: no resuelven el asunto ni fijan criterio. Ordenados por fecha, copaban las primeras posiciones y llenaban las respuestas de roles sin contenido.
+
+Cada fallo trae ahora el campo `aporte`, leído de su parte resolutiva:
+
+- **`fija doctrina`** — acogió una unificación de jurisprudencia, acogió la casación en el fondo, dictó sentencia de reemplazo o casó de oficio.
+- **`resuelve el fondo`** — rechazó el recurso, pero razonando sobre el asunto.
+- **`no entra al fondo`** — inadmisible, extemporáneo o rechazado en limine. No es criterio del tribunal.
+
+La búsqueda pide el triple de fallos de los que devuelve y se queda con los que más aportan, conservando el orden por fecha dentro de cada grupo. No descarta nada del universo: reordena y lo declara en `seleccion`, porque un inadmisible puede ser justo lo que se busca. Clasificado contra los 20 valores distintos que el Poder Judicial usa en ese campo.
 
 ## Fiabilidad
 

@@ -47,6 +47,15 @@ const campo = (html, etiqueta) => {
  * @param {number} [p.limite] 1..100
  */
 export async function buscarDictamenes(p = {}) {
+  // Sin criterio, el formulario de Contraloría devuelve su propia portada, que
+  // no trae filas. Sin esta guarda el resultado era `total: 0`, que se lee como
+  // "no hay dictámenes sobre esto" y es falso: no se buscó nada.
+  if (!String(p.texto ?? '').trim() && !String(p.numero ?? '').trim()) {
+    throw new Error(
+      'Indica `texto` (búsqueda libre) o `numero` (dictamen concreto). ' +
+        'Sin criterio, Contraloría no busca y el resultado vacío no significa que no existan dictámenes.',
+    );
+  }
   const limite = Math.min(Math.max(p.limite ?? 10, 1), 100);
   const clave = `cgr:buscar:${JSON.stringify(p)}`;
 
@@ -81,6 +90,23 @@ export async function buscarDictamenes(p = {}) {
         descriptores: celdas[3],
         url: `${BASE}cgrDetalleDictamenNVDA?OpenForm&UNID=${unid}`,
       });
+    }
+
+    // Un cero de verdad viene acompañado del mensaje "Se han encontrado 0
+    // dictámenes". Si no aparece ni ese mensaje ni filas, lo que llegó no es
+    // una búsqueda vacía sino otra página: decirlo evita afirmar que no hay
+    // jurisprudencia sobre algo que nunca se llegó a consultar.
+    const respondioBusqueda = /Se han encontrado/i.test(html);
+    if (!respondioBusqueda && resultados.length === 0) {
+      return {
+        total: null,
+        mostrados: 0,
+        resultados: [],
+        sin_datos: true,
+        advertencia:
+          'Contraloría no devolvió una página de resultados, así que NO se puede concluir que no existan ' +
+          'dictámenes sobre esto. Reintenta, o busca a mano en https://www.contraloria.cl/web/cgr/buscar-jurisprudencia',
+      };
     }
 
     return {

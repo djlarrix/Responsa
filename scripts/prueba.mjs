@@ -18,7 +18,13 @@ import { consultarEstadistica } from '../src/fuentes/estadisticas.mjs';
 import { buscarLaudos, listarMateriasArbitrales } from '../src/fuentes/arbitraje.mjs';
 import { valorEconomico } from '../src/fuentes/valores.mjs';
 import { enlaceConsultaCausas } from '../src/fuentes/causas.mjs';
+import { armarExpediente } from '../src/fuentes/expediente.mjs';
+import { crearDocx } from '../src/lib/docx.mjs';
 import { verificarFuentes } from '../src/lib/salud.mjs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { inflateRawSync } from 'node:zlib';
+import { join } from 'node:path';
 
 let ok = 0, fallos = 0;
 const check = (n, c, d = '') => {
@@ -27,6 +33,17 @@ const check = (n, c, d = '') => {
 };
 const seccion = (t) => console.log(`\n=== ${t} ===`);
 const fallo = (e) => { fallos++; console.log('  FALLA  excepción:', e.message); };
+
+/** Extrae word/document.xml de un .docx para poder comprobar su contenido. */
+function documentoXml(buf) {
+  const nombre = Buffer.from('word/document.xml');
+  const pos = buf.indexOf(nombre);
+  const cabecera = pos - 30; // el nombre va justo después de la cabecera local
+  const comprimido = buf.readUInt32LE(cabecera + 18);
+  const extra = buf.readUInt16LE(cabecera + 28);
+  const inicio = pos + nombre.length + extra;
+  return inflateRawSync(buf.subarray(inicio, inicio + comprimido)).toString('utf8');
+}
 
 // ---------- Chequeo de salud ----------
 seccion('Salud de las fuentes');
@@ -199,6 +216,93 @@ try {
   check('entrega enlace y pasos', !!c.url && c.pasos.length > 0);
   check('ofrece alternativas', c.alternativas_automatizables.length > 0);
 } catch (e) { fallo(e); }
+
+// ---------- Selección por aporte doctrinal ----------
+seccion('Selección de fallos por aporte doctrinal');
+try {
+  const r = await buscarSentencias({ literal: 'nulidad del despido', limite: 5 });
+  check('revisa más fallos de los que devuelve', /Se revisaron \d+ fallos/.test(r.seleccion ?? ''), r.seleccion);
+  const aportes = r.resultados.map((x) => x.aporte).filter(Boolean);
+  check('clasifica el aporte de cada fallo', aportes.length > 0, aportes.join(' | '));
+  const validos = ['fija doctrina', 'resuelve el fondo', 'no entra al fondo'];
+  check('sólo usa las categorías previstas', aportes.every((a) => validos.includes(a)));
+  const peso = { 'fija doctrina': 0, 'resuelve el fondo': 1, 'no entra al fondo': 3 };
+  const orden = r.resultados.map((x) => peso[x.aporte] ?? 2);
+  check('los que más aportan van primero', orden.every((v, i) => i === 0 || orden[i - 1] <= v), orden.join(','));
+  check(
+    'no encabeza un fallo que no entra al fondo',
+    r.resultados[0]?.aporte !== 'no entra al fondo' || r.resultados.every((x) => x.aporte === 'no entra al fondo'),
+  );
+} catch (e) { fallo(e); }
+
+// ---------- Recorte de contexto ----------
+seccion('Recorte de contexto');
+try {
+  const b = await buscarSentencias({ literal: 'tutela de derechos fundamentales', limite: 3 });
+  const conPasajes = b.resultados.filter((x) => x.pasajes_coincidentes?.length);
+  check('la búsqueda recorta el texto', b.resultados.every((x) => x.texto.length <= 1250),
+    `máx ${Math.max(...b.resultados.map((x) => x.texto.length))} caracteres`);
+  check('con pasajes, recorta aún más', conPasajes.length === 0 || conPasajes.every((x) => x.texto.length <= 520));
+  const uno = b.resultados[0];
+  const [rol, era] = String(uno.rol).split('-');
+  const s1 = await verSentencia({ rol, era, tribunal: 'corte_suprema' });
+  check('ver_sentencia sí trae el texto íntegro',
+    s1.encontrada && s1.texto.length > uno.texto.length && !s1.texto_recortado,
+    `${s1.texto.length} vs ${uno.texto.length} caracteres`);
+} catch (e) { fallo(e); }
+
+// ---------- Documentos Word ----------
+seccion('Generación de documentos Word');
+try {
+  const b = crearDocx([
+    { texto: 'Título de prueba', negrita: true, tamano: 14 },
+    { texto: 'Acentos, ñ y símbolos: «§» & <etiqueta>', justificado: true },
+  ]);
+  check('es un archivo ZIP válido', b[0] === 0x50 && b[1] === 0x4b, `${b.length} bytes`);
+  const txt = b.toString('latin1');
+  check('contiene las tres piezas obligatorias',
+    txt.includes('[Content_Types].xml') && txt.includes('_rels/.rels') && txt.includes('word/document.xml'));
+  // Un byte de control dentro del XML hace que Word rechace el archivo entero.
+  // Hay que mirar el XML descomprimido: en el ZIP el byte puede aparecer por azar.
+  const conControl = crearDocx([{ texto: `con control ${String.fromCharCode(7)} fin` }]);
+  check('descarta caracteres de control que romperían Word',
+    !documentoXml(conControl).includes(String.fromCharCode(7)));
+  check('escapa los caracteres reservados de XML',
+    documentoXml(b).includes('&amp;') && documentoXml(b).includes('&lt;etiqueta&gt;'));
+} catch (e) { fallo(e); }
+
+// ---------- Carpeta de respaldo ----------
+seccion('Carpeta de respaldo');
+const dirPrueba = mkdtempSync(join(tmpdir(), 'responsa-'));
+process.env.RESPONSA_DESCARGAS = dirPrueba;
+try {
+  const r = await armarExpediente({
+    asunto: 'Prueba automatizada',
+    consulta: 'prueba',
+    documentos: [
+      { tipo: 'norma', idNorma: '172986', articulo: '1545', titulo: 'Código Civil, art. 1545' },
+      { tipo: 'sentencia_pjud', rol: '00000000-1999', titulo: 'fallo inexistente a propósito' },
+    ],
+  });
+  check('crea la carpeta en Descargas', r.carpeta.startsWith(dirPrueba));
+  check('guarda el documento que sí existe', r.guardados === 1, r.archivos.join(', '));
+  check('anota lo que no pudo descargar', r.no_descargados?.length === 1, r.no_descargados?.[0]?.motivo);
+  check('avisa para que no se cite lo no respaldado', /no debe darlo por respaldado/.test(r.aviso ?? ''));
+  const archivos = readdirSync(r.carpeta);
+  check('siempre escribe el índice', archivos.includes('00 - Indice.docx'));
+  check('los archivos no quedan vacíos', archivos.every((f) => statSync(join(r.carpeta, f)).size > 500));
+  const indice = readFileSync(join(r.carpeta, '00 - Indice.docx'));
+  check('el índice es un .docx válido', indice[0] === 0x50 && indice[1] === 0x4b);
+  try {
+    await armarExpediente({ asunto: 'x', documentos: [{ tipo: 'inventado' }] });
+    check('rechaza un tipo de documento inexistente', false);
+  } catch (err) { check('rechaza un tipo de documento inexistente', /no reconocido/.test(err.message)); }
+  try {
+    await armarExpediente({ asunto: '', documentos: [{ tipo: 'norma', idNorma: '1' }] });
+    check('exige el asunto', false);
+  } catch (err) { check('exige el asunto', /asunto/.test(err.message)); }
+} catch (e) { fallo(e); }
+finally { rmSync(dirPrueba, { recursive: true, force: true }); delete process.env.RESPONSA_DESCARGAS; }
 
 console.log(`\n──────────────\n${ok} OK, ${fallos} fallas\n`);
 process.exit(fallos > 0 ? 1 : 0);

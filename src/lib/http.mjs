@@ -98,6 +98,40 @@ export async function pedir(url, opts = {}) {
   return ultimo;
 }
 
+/**
+ * Descarga binaria (PDF de un fallo, de un laudo, de un artículo).
+ *
+ * `pedir` decodifica a texto, lo que corrompe un PDF. Comparte el control de
+ * ritmo por host para no gatillar los mismos bloqueos.
+ *
+ * @returns {Promise<{ok: boolean, status: number, datos?: Buffer, tipo?: string, error?: string}>}
+ */
+export async function descargar(url, { timeoutMs = 60000 } = {}) {
+  let host = '';
+  try {
+    host = new URL(url).host;
+  } catch {
+    return { ok: false, status: 0, error: `URL inválida: ${url}` };
+  }
+  await turno(host);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      redirect: 'follow',
+      signal: ctrl.signal,
+      headers: { 'User-Agent': UA, 'Accept-Language': 'es-CL,es;q=0.9', Accept: '*/*' },
+    });
+    if (!res.ok) return { ok: false, status: res.status, error: `HTTP ${res.status}` };
+    const datos = Buffer.from(await res.arrayBuffer());
+    return { ok: true, status: res.status, datos, tipo: res.headers.get('content-type') ?? '' };
+  } catch (e) {
+    return { ok: false, status: 0, error: String(e?.message ?? e) };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 /** Quita etiquetas XML/HTML y normaliza espacios. */
 export function aTextoPlano(s) {
   return String(s ?? '')

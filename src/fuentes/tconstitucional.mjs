@@ -57,6 +57,9 @@ function limpiarFolio(t) {
     .trim();
 }
 
+/** Párrafos coincidentes que se devuelven por fallo. Ver recortar(). */
+const TOPE_PARRAFOS = 4;
+
 function normalizar(s) {
   const extra = campos(s.custom_fields);
   const parrafos = (s.highlightParagraphs ?? [])
@@ -95,7 +98,7 @@ export async function buscarSentenciasTC({ consulta, pagina = 1, desde, hasta, t
   const rango = desde || hasta ? { from: desde ?? null, to: hasta ?? null } : null;
   const clave = `tc:buscar:${consulta}:${pagina}:${desde ?? ''}:${hasta ?? ''}`;
 
-  return conCache(clave, 86400, async () => {
+  const crudo = await conCache(clave, 86400, async () => {
     const url = `${BASE}/extended/sentencias?page=${pagina}&filter=${filtro({ search: consulta, state: null, dateRange: rango })}`;
     const res = await pedir(url, { headers: CABECERAS, timeoutMs: 45000 });
     if (!res.ok) throw new Error(`El buscador del Tribunal Constitucional respondió HTTP ${res.status}. ${res.texto.slice(0, 200)}`);
@@ -110,17 +113,6 @@ export async function buscarSentenciasTC({ consulta, pagina = 1, desde, hasta, t
     if (!j.data) throw new Error('El Tribunal Constitucional devolvió una respuesta sin `data`: su buscador cambió.');
 
     const resultados = (j.data.results ?? []).map(normalizar);
-    // Las sentencias del TC son PDF completos: cinco llegaban a ~72.000 tokens.
-  // Los párrafos coincidentes son lo que sirve para citar; el resto se pide
-  // aparte cuando hace falta.
-  if (textoCompleto !== true) {
-    for (const r of resultados) {
-      if (r.texto.length > 1200) {
-        r.texto = r.texto.slice(0, 1200) + '…';
-        r.texto_recortado = true;
-      }
-    }
-  }
 
     return {
       total: j.data.count ?? 0,
@@ -132,6 +124,41 @@ export async function buscarSentenciasTC({ consulta, pagina = 1, desde, hasta, t
       como_verificar: 'Cada sentencia trae `pdf` (descarga directa del fallo) y `url` al buscador del TC: https://buscador.tcchile.cl',
     };
   });
+
+  return textoCompleto === true ? crudo : recortar(crudo);
+}
+
+/**
+ * Deja de cada fallo lo justo para decidir y para citar.
+ *
+ * Los fallos del TC son PDF completos y los párrafos coincidentes llegaban a
+ * ocho por sentencia, de unos 700 caracteres cada uno: el 79% de la respuesta.
+ * Cuatro bastan para juzgar la pertinencia y para citar el pasaje; quien
+ * necesite el resto tiene el PDF en `pdf`.
+ *
+ * Va FUERA de la caché a propósito: así se guarda el resultado completo y
+ * cambiar el recorte no obliga a invalidar el caché de las demás fuentes.
+ */
+function recortar(r) {
+  return {
+    ...r,
+    resultados: r.resultados.map((s) => {
+      const parrafos = s.parrafos_coincidentes.slice(0, TOPE_PARRAFOS);
+      // Con párrafos coincidentes, el arranque del fallo aporta poco: es la
+      // portada y la individualización de las partes.
+      const tope = parrafos.length ? 500 : 1200;
+      const texto = s.texto.length > tope ? s.texto.slice(0, tope) + '…' : s.texto;
+      return {
+        ...s,
+        parrafos_coincidentes: parrafos,
+        ...(s.parrafos_coincidentes.length > parrafos.length
+          ? { parrafos_omitidos: s.parrafos_coincidentes.length - parrafos.length }
+          : {}),
+        texto,
+        ...(texto === s.texto ? {} : { texto_recortado: true }),
+      };
+    }),
+  };
 }
 
 /**
