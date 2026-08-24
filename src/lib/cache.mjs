@@ -20,7 +20,7 @@ const DIR = process.env.RESPONSA_CACHE_DIR || join(homedir(), '.responsa', 'cach
  * vieja en caché: sigue recibiendo el formato anterior hasta que venza el TTL,
  * que para las normas son siete días.
  */
-const VERSION = 9;
+const VERSION = 10;
 
 let listo = false;
 async function asegurarDir() {

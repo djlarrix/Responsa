@@ -143,47 +143,76 @@ function normasCitadas(xmlEtiquetado) {
 function normasAplicadas(d) {
   const pares = d.norma_articulo_ss ?? [];
   const ids = d.id_norma_ss ?? [];
-  const vistas = new Map();
+  // Se agrupa por norma en vez de listar un registro por artículo. Un fallo que
+  // aplica cinco artículos del Código del Trabajo devolvía cinco veces el
+  // nombre del código y cinco veces la misma URL de la BCN. Agrupado dice lo
+  // mismo, ocupa un tercio y se lee como se cita: "los arts. 58, 160 y 171 del
+  // Código del Trabajo".
+  const porNorma = new Map();
+  const vistas = new Set();
   pares.forEach((par, i) => {
     const [nombre, articulo] = String(par).split(/\\t|\t/);
-    const idNorma = ids[i];
-    const clave = `${idNorma ?? nombre}|${articulo ?? ''}`;
+    const idNorma = ids[i] ?? null;
+    const crudo = (articulo ?? '').trim();
+    const clave = `${idNorma ?? nombre}|${crudo}`;
     if (vistas.has(clave)) return;
+    vistas.add(clave);
 
     // Los códigos son textos refundidos, así que el PJUD nombra sus artículos
     // "ART. 1545 (DEL ART. 2)". Esa coletilla es una referencia interna al
     // decreto que fija el texto y NO va en una cita: se cita "artículo 1545
     // del Código Civil". Se separa para no arrastrarla a un escrito.
-    const crudo = (articulo ?? '').trim();
     const m = crudo.match(/^(.*?)\s*\(\s*DEL\s+ART\.?\s*(\d+)\s*\)\s*$/i);
+    const limpio = (m ? m[1] : crudo).replace(/^ART\.?\s*/i, '').trim();
 
-    vistas.set(clave, {
-      norma: (nombre ?? '').trim(),
-      articulo: m ? m[1].trim() : crudo,
-      ...(m ? { articulo_bcn: crudo, dentro_del_articulo: m[2] } : {}),
-      idNorma: idNorma ?? null,
-      url: idNorma ? `https://www.bcn.cl/leychile/navegar?idNorma=${idNorma}` : null,
-    });
+    const claveNorma = String(idNorma ?? nombre ?? '');
+    if (!porNorma.has(claveNorma)) {
+      porNorma.set(claveNorma, {
+        norma: (nombre ?? '').trim(),
+        idNorma,
+        url: idNorma ? `https://www.bcn.cl/leychile/navegar?idNorma=${idNorma}` : null,
+        articulos: [],
+        ...(m ? { dentro_del_articulo: m[2] } : {}),
+      });
+    }
+    if (limpio) porNorma.get(claveNorma).articulos.push(limpio);
   });
-  return [...vistas.values()];
+  return [...porNorma.values()];
 }
+
+/** Descriptores que se devuelven por fallo. Ver normalizar(). */
+const TOPE_DESCRIPTORES = 8;
+
+/** Pasajes coincidentes por fallo, y largo mínimo para que sean citables. */
+const TOPE_PASAJES = 3;
+const TOPE_PASAJE_MINIMO = 40;
 
 /**
  * Solr devuelve, aparte de los documentos, los fragmentos que coincidieron con
  * la consulta (`highlighting: {id: {campo: [fragmentos]}}`). Son lo que permite
  * citar el pasaje pertinente en vez de decir "la sentencia trata el tema".
  */
-function fragmentos(highlighting, id) {
-  const h = highlighting?.[id];
-  if (!h) return [];
-  const salida = [];
-  for (const valores of Object.values(h)) {
-    for (const v of Array.isArray(valores) ? valores : [valores]) {
-      const limpio = aTextoPlano(String(v));
-      if (limpio && !salida.includes(limpio)) salida.push(limpio);
+function fragmentos(hl, id) {
+  const campos = hl?.[id];
+  if (!campos) return [];
+  const vistos = new Set();
+  const utiles = [];
+  for (const lista of Object.values(campos)) {
+    for (const f of lista ?? []) {
+      const t = aTextoPlano(f).trim();
+      // Solr a veces devuelve recortes de cuatro caracteres. Eso no es un
+      // pasaje: es ruido que, puesto entre comillas, parecería una cita.
+      if (t.length < TOPE_PASAJE_MINIMO) continue;
+      const clave = t.toLowerCase();
+      if (vistos.has(clave)) continue;
+      vistos.add(clave);
+      utiles.push(t);
+      // Tres pasajes bastan para juzgar si el fallo sirve y para citarlo. Uno
+      // traía siete, todos del mismo razonamiento.
+      if (utiles.length >= TOPE_PASAJES) return utiles;
     }
   }
-  return salida.slice(0, 6);
+  return utiles;
 }
 
 /**
@@ -220,6 +249,77 @@ function tribunalYRol(d, clave, nombreBuscador) {
 }
 
 /**
+ * Junta los documentos que pertenecen a una misma causa.
+ *
+ * Cuando la Corte acoge una casación o una unificación, publica DOS
+ * documentos: la sentencia que acoge y la de reemplazo. El buscador los
+ * devuelve por separado, con la misma carátula, la misma fecha, los mismos
+ * ministros y los mismos descriptores. Presentarlos como dos resultados
+ * ocupaba dos de los cinco cupos, duplicaba todo el contenido y —lo peor—
+ * hacía parecer que había dos precedentes donde hay uno.
+ *
+ * Se fusiona sólo con tribunal, rol Y carátula idénticos: tres coincidencias,
+ * porque juntar dos causas distintas sería mucho peor que mostrarlas aparte.
+ */
+function fusionarPorCausa(resultados) {
+  const porCausa = new Map();
+  const orden = [];
+
+  for (const r of resultados) {
+    // Sin rol no hay forma segura de saber si es la misma causa.
+    const clave = r.rol ? `${r.tribunal}|${r.rol}|${r.caratulado}` : null;
+    if (!clave || !porCausa.has(clave)) {
+      if (clave) porCausa.set(clave, r);
+      orden.push(clave ? porCausa.get(clave) : r);
+      r.resoluciones = [{ resultado: r.resultado, fecha: r.fecha, id: r.id }];
+      continue;
+    }
+
+    const base = porCausa.get(clave);
+    base.resoluciones.push({ resultado: r.resultado, fecha: r.fecha, id: r.id });
+
+    // Se conserva el pronunciamiento que más aporta: entre "acoge la
+    // unificación" y su sentencia de reemplazo, la causa vale por el primero.
+    if (pesoDe(r.aporte) < pesoDe(base.aporte)) {
+      base.aporte = r.aporte;
+      base.resultado = r.resultado;
+    }
+    base.normas_aplicadas = unirNormas(base.normas_aplicadas, r.normas_aplicadas);
+    base.pasajes_coincidentes = [
+      ...new Set([...(base.pasajes_coincidentes ?? []), ...(r.pasajes_coincidentes ?? [])]),
+    ];
+    // El texto de la de reemplazo suele ser el que contiene la decisión nueva.
+    if ((r.texto?.length ?? 0) > (base.texto?.length ?? 0)) base.texto = r.texto;
+  }
+
+  for (const r of orden) {
+    if (r.resoluciones.length > 1) {
+      // Ordenadas de la más antigua a la más nueva: primero se acoge, después
+      // se reemplaza.
+      r.resoluciones.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    } else {
+      delete r.resoluciones;
+    }
+  }
+  return orden;
+}
+
+/** Une dos listas de normas aplicadas sin repetir norma ni artículo. */
+function unirNormas(a = [], b = []) {
+  const porClave = new Map();
+  for (const n of [...a, ...b]) {
+    const clave = String(n.idNorma ?? n.norma ?? '');
+    if (!porClave.has(clave)) {
+      porClave.set(clave, { ...n, articulos: [...(n.articulos ?? [])] });
+    } else {
+      const acc = porClave.get(clave);
+      for (const art of n.articulos ?? []) if (!acc.articulos.includes(art)) acc.articulos.push(art);
+    }
+  }
+  return [...porClave.values()];
+}
+
+/**
  * Cuánto aporta un fallo a una investigación jurídica.
  *
  * Medido sobre 100 fallos reales de la Corte Suprema (21-ago-2026): un tercio
@@ -232,7 +332,7 @@ function tribunalYRol(d, clave, nombreBuscador) {
  * porque un inadmisible puede ser justo lo que se busca (por ejemplo, para
  * mostrar que la Corte no ha entrado al fondo de una materia).
  */
-function valorDoctrinal(resultado) {
+function valorDoctrinal(resultado, clave) {
   const r = (resultado ?? '')
     .toUpperCase()
     .normalize('NFD')
@@ -245,14 +345,16 @@ function valorDoctrinal(resultado) {
     return 'no entra al fondo';
   }
   // La Corte fija criterio: unificación acogida, casación en el fondo acogida,
-  // sentencia de reemplazo o casación de oficio.
+  // sentencia de reemplazo o casación de oficio. Sólo la Corte Suprema: una
+  // Corte de Apelaciones que acoge un recurso resuelve ese caso, no fija
+  // doctrina, y rotularlo así le atribuiría una autoridad que no tiene.
   if (
     /ACOGE.*UNIFICACION|ACOGID[AO].*UNIFICACION/.test(r) ||
     /SENTENCIA DE REEMPLAZO/.test(r) ||
     /(ACOGID[AO]|\bCASA\b).*(CASACION )?(EN EL )?FONDO/.test(r) ||
     /(\bCASA\b|ANULA) .*DE OFICIO/.test(r)
   ) {
-    return 'fija doctrina';
+    return clave === 'corte_suprema' ? 'fija doctrina' : 'resuelve el fondo';
   }
   // Hay pronunciamiento sobre el asunto aunque el recurso no prospere.
   if (/RECHAZ|ACOGID[AO]|ACOGE|CONFIRMA|REVOCA|INVALIDA|ANULA/.test(r)) {
@@ -288,9 +390,11 @@ function normalizar(d, nombreBuscador, clave) {
     resultado: d.resultado_recurso_sup_s ?? '',
     // Cuánto sirve para investigar. Ver valorDoctrinal(): un tercio de los
     // fallos de la Suprema son inadmisibilidades que no resuelven nada.
-    aporte: valorDoctrinal(d.resultado_recurso_sup_s) ?? undefined,
+    aporte: valorDoctrinal(d.resultado_recurso_sup_s, clave) ?? undefined,
     materia: d.gls_libro_sup_s ?? '',
-    descriptores: d.gls_descriptor_ss ?? [],
+    // Un fallo trae hasta trece descriptores y los últimos suelen ser el
+    // nombre de las partes o materias marginales. Los primeros son la materia.
+    descriptores: (d.gls_descriptor_ss ?? []).slice(0, TOPE_DESCRIPTORES),
     ministros: d.gls_ministro_ss ?? (d.sent__gls_int_firma_sup_s ?? '').split(',').filter(Boolean),
     // En los juzgados no hay ministros sino juez de la causa.
     juez: d.gls_juez_ss ?? undefined,
@@ -376,6 +480,19 @@ function consultar(s, p, filas, pagina, factor = 1) {
  */
 export async function buscarSentencias(p = {}) {
   const tribunal = p.tribunal ?? 'corte_suprema';
+
+  // Sin criterio de búsqueda, el PJUD devuelve su corpus entero ordenado por
+  // fecha: 303.376 fallos, de los que se mostraban los primeros como si
+  // respondieran la consulta. Un filtro sólo por fechas tampoco busca nada.
+  const criterios = ['texto', 'literal', 'todas', 'algunas', 'rol', 'numNorma', 'numArt', 'tipoNorma'];
+  if (!criterios.some((c) => String(p[c] ?? '').trim())) {
+    throw new Error(
+      'Falta el criterio de búsqueda. Indica al menos uno: `literal` (frase exacta), `todas`, ' +
+        '`algunas`, `texto`, `rol`, o la norma aplicada (`tipoNorma` + `numNorma`). ' +
+        'Sin criterio el buscador devuelve los fallos más recientes de cualquier materia, ' +
+        'que no responden nada.',
+    );
+  }
   // Un `limite` no numérico daba NaN, y el PJUD respondía con un error que
   // parecía una caída suya. Se sanean aquí para que el fallo, si lo hay, sea
   // de verdad de la fuente.
@@ -428,9 +545,15 @@ export async function buscarSentencias(p = {}) {
     return r;
   });
 
-  // Se prefieren los fallos que resuelven, conservando el orden por fecha
-  // dentro de cada grupo (sort estable en Node ≥ 11).
+  // Primero se juntan los documentos de una misma causa: si no, la sentencia
+  // que acoge y su sentencia de reemplazo ocupan dos cupos y se leen como dos
+  // precedentes distintos.
   const revisados = resultados.length;
+  resultados = fusionarPorCausa(resultados);
+  const causas = resultados.length;
+
+  // Después se prefieren las que resuelven, conservando el orden por fecha
+  // dentro de cada grupo (sort estable en Node >= 11).
   let apartados = 0;
   if (factor > 1) {
     resultados.sort((a, b) => pesoDe(a.aporte) - pesoDe(b.aporte));
@@ -460,9 +583,27 @@ export async function buscarSentencias(p = {}) {
     pagina,
     mostrados: resultados.length,
     tribunal: s.nombre,
-    ...(factor > 1
+    ...(resultados.length === 0
       ? {
-          seleccion: `Se revisaron ${revisados} fallos y se muestran los ${resultados.length} que más aportan.`,
+          sin_datos: true,
+          sugerencia:
+            'Sin coincidencias. Prueba con `literal` más corto, con `todas` en vez de `literal`, ' +
+            'o busca por la norma aplicada. Que no aparezca aquí NO significa que no existan ' +
+            'fallos: el buscador del Poder Judicial es una selección, no el universo de sentencias.',
+        }
+      : {}),
+    ...(factor > 1 && revisados > 0
+      ? {
+          // Los juzgados no llenan la parte resolutiva, así que ahí no hay
+          // nada que clasificar: decir "las que más aportan" sería inventar
+          // un criterio que no se aplicó.
+          seleccion:
+            `Se revisaron ${revisados} documentos` +
+            (causas < revisados ? `, que corresponden a ${causas} causas` : '') +
+            (resultados.some((r) => r.aporte)
+              ? `, y se muestran las ${resultados.length} que más aportan.`
+              : `, y se muestran ${resultados.length}. Esta sede no publica la parte resolutiva, ` +
+                'así que no se pudo ordenar por lo que aporta cada fallo: van por fecha.'),
           ...(apartados
             ? { quedaron_fuera_por_no_entrar_al_fondo: apartados }
             : {}),

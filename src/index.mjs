@@ -34,8 +34,8 @@ const HERRAMIENTAS = [
     name: 'buscar_jurisprudencia',
     description:
       'Busca sentencias reales del Poder Judicial de Chile. Devuelve rol, tribunal, fecha, carátula, ' +
-      'resultado, texto completo, los pasajes que coinciden con la consulta y las normas aplicadas ' +
-      'con enlace a Ley Chile.\n\n' +
+      'resultado, un extracto, los pasajes que coinciden y las normas aplicadas agrupadas por norma, ' +
+      'con enlace a Ley Chile. EXIGE al menos un criterio de búsqueda.\n\n' +
       'ELIGE BIEN EL CAMPO, de eso depende la precisión:\n' +
       '• `literal` para una frase o institución jurídica exacta ("nulidad del despido", ' +
       '"enriquecimiento sin causa"). Es el más preciso: úsalo cuando la consulta nombra una figura.\n' +

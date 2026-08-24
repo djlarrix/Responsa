@@ -113,6 +113,14 @@ export async function buscarDictamenes(p = {}) {
       total,
       mostrados: resultados.length,
       resultados,
+      ...(resultados.length === 0
+        ? {
+            sin_datos: true,
+            sugerencia:
+              'Sin coincidencias en la Base de Dictámenes. Prueba con menos palabras o con otro ' +
+              'término. Que no aparezca aquí no significa que la Contraloría no se haya pronunciado.',
+          }
+        : {}),
       como_verificar: 'Base de Dictámenes de la Contraloría General de la República: https://www.contraloria.cl/web/cgr/buscar-jurisprudencia',
     };
   });
@@ -161,16 +169,37 @@ export async function verDictamen(unid, { textoCompleto = true } = {}) {
       }
     }
 
+    const numero = campo(html, 'Número Dictamen') || entre('Número Dictamen', 'Fecha');
+    const materia = entre('MATERIA', 'DOCUMENTO COMPLETO');
+
+    // Un UNID con formato válido pero inexistente devuelve una plantilla vacía
+    // que se parseaba como ficha con `vigente_aparente: true`. Eso se lee como
+    // "el dictamen existe y está vigente", que es la peor forma de fallar aquí.
+    // No sirve mirar `materia`: la plantilla trae texto fijo ("Corresponde a
+    // Informe en Recurso de Protección"). Lo que no puede faltar en un
+    // dictamen real es su número y su cuerpo.
+    if (!numero.trim() && !texto.trim()) {
+      return {
+        encontrado: false,
+        unid,
+        mensaje:
+          `Contraloría no tiene un dictamen con el identificador ${unid}. ` +
+          'No se devuelve ficha: lo que respondió su servidor no es un dictamen.',
+        advertencia: 'No cites este identificador. Ubica el dictamen con `buscar_dictamenes`.',
+      };
+    }
+
     return {
+      encontrado: true,
       unid,
-      numero: campo(html, 'Número Dictamen') || entre('Número Dictamen', 'Fecha'),
+      numero,
       fecha: entre('Fecha', 'Carácter'),
       estado,
       vigente_aparente: !estado.reconsiderado,
       descriptores: entre('DESCRIPTORES', 'DICTAMENES RELACIONADOS'),
       dictamenes_relacionados: entre('DICTAMENES RELACIONADOS', 'FUENTES LEGALES'),
       fuentes_legales: entre('FUENTES LEGALES', 'MATERIA'),
-      materia: entre('MATERIA', 'DOCUMENTO COMPLETO'),
+      materia,
       texto,
       url: `${BASE}cgrDetalleDictamenNVDA?OpenForm&UNID=${unid}`,
       advertencia: estado.reconsiderado

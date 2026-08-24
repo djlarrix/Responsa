@@ -221,7 +221,7 @@ try {
 seccion('Selección de fallos por aporte doctrinal');
 try {
   const r = await buscarSentencias({ literal: 'nulidad del despido', limite: 5 });
-  check('revisa más fallos de los que devuelve', /Se revisaron \d+ fallos/.test(r.seleccion ?? ''), r.seleccion);
+  check('revisa más fallos de los que devuelve', /Se revisaron \d+ documentos/.test(r.seleccion ?? ''), r.seleccion);
   const aportes = r.resultados.map((x) => x.aporte).filter(Boolean);
   check('clasifica el aporte de cada fallo', aportes.length > 0, aportes.join(' | '));
   const validos = ['fija doctrina', 'resuelve el fondo', 'no entra al fondo'];
@@ -229,6 +229,15 @@ try {
   const peso = { 'fija doctrina': 0, 'resuelve el fondo': 1, 'no entra al fondo': 3 };
   const orden = r.resultados.map((x) => peso[x.aporte] ?? 2);
   check('los que más aportan van primero', orden.every((v, i) => i === 0 || orden[i - 1] <= v), orden.join(','));
+  // "Fija doctrina" atribuye autoridad: una Corte de Apelaciones no la fija.
+  const ape = await buscarSentencias({ literal: 'despido', tribunal: 'corte_apelaciones', limite: 6 });
+  check('sólo la Corte Suprema "fija doctrina"', ape.resultados.every((x) => x.aporte !== 'fija doctrina'),
+    [...new Set(ape.resultados.map((x) => x.aporte))].join(' | '));
+  // Los juzgados no publican la parte resolutiva: no se puede decir que se
+  // eligió "lo que más aporta" cuando no había con qué clasificar.
+  const juz = await buscarSentencias({ literal: 'despido', tribunal: 'laborales', limite: 4 });
+  check('declara cuando no pudo ordenar por aporte',
+    !juz.resultados.some((x) => x.aporte) ? /no se pudo ordenar/.test(juz.seleccion ?? '') : true);
   check(
     'no encabeza un fallo que no entra al fondo',
     r.resultados[0]?.aporte !== 'no entra al fondo' || r.resultados.every((x) => x.aporte === 'no entra al fondo'),
@@ -303,6 +312,92 @@ try {
   } catch (err) { check('exige el asunto', /asunto/.test(err.message)); }
 } catch (e) { fallo(e); }
 finally { rmSync(dirPrueba, { recursive: true, force: true }); delete process.env.RESPONSA_DESCARGAS; }
+
+// ---------- Fallas silenciosas ----------
+// El peligro de esta herramienta no es el error visible: es la respuesta que
+// parece válida y no lo es. Un cero se lee como "no existe"; una ficha vacía,
+// como un documento real. Cada caso de aquí abajo fue un error de verdad.
+seccion('Fallas silenciosas: lo que parece válido y no lo es');
+
+/** Sana si lanza excepción, o si declara su vacío con sin_datos/mensaje. */
+async function declaraOFalla(nombre, fn) {
+  try {
+    const r = await fn();
+    const j = JSON.stringify(r ?? null);
+    check(nombre, /sin_datos|sugerencia|"encontrad[oa]"\s*:\s*false|mensaje|advertencia/i.test(j),
+      j.slice(0, 90));
+  } catch {
+    ok++; console.log(`  OK     ${nombre}  (lo rechaza)`);
+  }
+}
+
+try {
+  // Sin criterio, el PJUD devolvía su corpus entero (303.376 fallos) ordenado
+  // por fecha, y se mostraban los primeros como si respondieran la consulta.
+  try {
+    await buscarSentencias({ limite: 2 });
+    check('jurisprudencia sin criterio se rechaza', false, 'devolvió resultados');
+  } catch (err) {
+    check('jurisprudencia sin criterio se rechaza', /criterio de búsqueda/i.test(err.message));
+  }
+  await declaraOFalla('jurisprudencia sin coincidencias lo declara',
+    () => buscarSentencias({ literal: 'zzqxwvkjhgfdsa', limite: 3 }));
+  await declaraOFalla('rol inexistente lo declara', () => verSentencia({ rol: '99999999', era: '1999' }));
+  await declaraOFalla('Tribunal Constitucional sin coincidencias lo declara',
+    () => buscarSentenciasTC({ consulta: 'zzqxwvkjhgfdsa' }));
+  await declaraOFalla('Contraloría sin coincidencias lo declara',
+    () => buscarDictamenes({ texto: 'zzqxwvkjhgfdsa', limite: 3 }));
+  await declaraOFalla('Contraloría sin criterio se rechaza', () => buscarDictamenes({}));
+  // Un UNID de formato válido pero falso devolvía una ficha vacía marcada
+  // `vigente_aparente: true`, que se lee como "existe y está vigente".
+  const falso = await verDictamen('00000000000000000000000000000000');
+  check('UNID falso no devuelve ficha de dictamen', falso?.encontrado === false, falso?.mensaje?.slice(0, 60));
+  check('UNID falso no dice que esté vigente', falso?.vigente_aparente === undefined);
+  await declaraOFalla('artículo inexistente lo declara', () => verNorma('172986', '999999'));
+  await declaraOFalla('idNorma inexistente lo declara', () => verNorma('999999999', '1'));
+  await declaraOFalla('dictamen DT inexistente lo declara', () => verDictamenDT('999999999'));
+  // Citas inventadas: la BCN siempre devuelve algo, así que hay que exigir que
+  // el título encontrado comparta de verdad las palabras de la cita.
+  for (const cita of ['Ley de la Gravedad Universal', 'Estatuto del Unicornio']) {
+    const c = await resolverCita(cita);
+    check(`no da por verificada una cita inventada: "${cita}"`, c?.verificada !== true, c?.titulo?.slice(0, 40));
+  }
+} catch (e) { fallo(e); }
+
+// ---------- Una causa, un resultado ----------
+seccion('Documentos de una misma causa');
+try {
+  const r = await buscarSentencias({ literal: 'nulidad del despido', limite: 5 });
+  const roles = r.resultados.map((x) => x.rol);
+  check('no repite el mismo rol', new Set(roles).size === roles.length, roles.join(' '));
+  const fusionada = r.resultados.find((x) => x.resoluciones);
+  if (fusionada) {
+    check('agrupa las resoluciones de una causa', fusionada.resoluciones.length > 1,
+      `rol ${fusionada.rol}: ${fusionada.resoluciones.map((x) => x.resultado.slice(0, 24)).join(' + ')}`);
+    check('las resoluciones van de la más antigua a la más nueva',
+      fusionada.resoluciones.every((x, i, a) => i === 0 || a[i - 1].fecha <= x.fecha));
+  } else {
+    ok++; console.log('  OK     agrupa las resoluciones de una causa  (esta vez no vinieron repetidas)');
+  }
+  // Un fallo que aplica cinco artículos del mismo código traía cinco veces el
+  // nombre del código y cinco veces la misma URL de la BCN.
+  const conNormas = r.resultados.find((x) => x.normas_aplicadas?.length);
+  if (conNormas) {
+    const nombres = conNormas.normas_aplicadas.map((n) => n.norma);
+    check('agrupa los artículos bajo su norma', new Set(nombres).size === nombres.length,
+      conNormas.normas_aplicadas.map((n) => `${n.norma} arts. ${n.articulos.join(', ')}`).join(' | ').slice(0, 90));
+    check('los artículos salen limpios, sin el prefijo ART.',
+      conNormas.normas_aplicadas.every((n) => n.articulos.every((a) => !/^ART/i.test(a))));
+  }
+  check('acota los descriptores', r.resultados.every((x) => x.descriptores.length <= 8));
+  const pasajes = r.resultados.flatMap((x) => x.pasajes_coincidentes ?? []);
+  check('acota los pasajes por fallo', r.resultados.every((x) => (x.pasajes_coincidentes?.length ?? 0) <= 3));
+  // Solr devolvía recortes de cuatro caracteres: entre comillas parecerían una cita.
+  check('descarta pasajes demasiado cortos para citar', pasajes.every((t) => t.length >= 40),
+    pasajes.length ? `el más corto mide ${Math.min(...pasajes.map((t) => t.length))}` : 'sin pasajes');
+  check('no repite pasajes dentro de un fallo',
+    r.resultados.every((x) => new Set(x.pasajes_coincidentes ?? []).size === (x.pasajes_coincidentes?.length ?? 0)));
+} catch (e) { fallo(e); }
 
 console.log(`\n──────────────\n${ok} OK, ${fallos} fallas\n`);
 process.exit(fallos > 0 ? 1 : 0);

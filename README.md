@@ -194,11 +194,11 @@ Las fuentes devuelven documentos enteros, y devolverlos tal cual llena el contex
 | | antes | ahora |
 |---|---|---|
 | `ver_norma` sin artículo (Código Civil) | 207.000 tokens | 860 |
-| `buscar_jurisprudencia_constitucional` | 72.000 | 6.300 |
-| `buscar_jurisprudencia_en_todos` | 67.000 | 6.400 |
-| `buscar_jurisprudencia` | 24.600 | 5.100 |
+| `buscar_jurisprudencia_constitucional` | 72.000 | 5.400 |
+| `buscar_jurisprudencia_en_todos` | 67.000 | 5.800 |
+| `buscar_jurisprudencia` | 24.600 | 4.000 |
 | `listar_materias_arbitrales` | 17.700 | 1.100 |
-| **una sesión con las doce herramientas** | **444.000** | **29.200** |
+| **una sesión con las doce herramientas** | **444.000** | **27.200** |
 
 El criterio: **buscar devuelve lo necesario para decidir, no el documento entero.** Cada fallo llega con un extracto y con los pasajes que coincidieron con la consulta, que es lo que sirve para elegir cuál leer; el texto íntegro se pide después con `ver_sentencia`. Y `ver_norma` sin `articulo` devuelve el índice de números, no los 2.841 artículos del Código Civil.
 
@@ -217,6 +217,29 @@ Cada fallo trae ahora el campo `aporte`, leído de su parte resolutiva:
 - **`no entra al fondo`** — inadmisible, extemporáneo o rechazado en limine. No es criterio del tribunal.
 
 La búsqueda pide el triple de fallos de los que devuelve y se queda con los que más aportan, conservando el orden por fecha dentro de cada grupo. No descarta nada del universo: reordena y lo declara en `seleccion`, porque un inadmisible puede ser justo lo que se busca. Clasificado contra los 20 valores distintos que el Poder Judicial usa en ese campo.
+
+**`fija doctrina` sólo aparece en la Corte Suprema.** Una Corte de Apelaciones que acoge un recurso resuelve ese caso; rotularlo igual le atribuiría una autoridad que no tiene. Los juzgados no publican la parte resolutiva: ahí no hay `aporte` y `seleccion` dice que no se pudo ordenar, en vez de afirmar una selección que no ocurrió.
+
+## Una causa, un resultado
+
+Cuando la Corte acoge una casación o una unificación publica **dos** documentos: la sentencia que acoge y la de reemplazo. Venían como dos resultados con la misma carátula, la misma fecha, los mismos ministros y los mismos descriptores: ocupaban dos de los cinco cupos, duplicaban todo el contenido y hacían parecer que había dos precedentes donde hay uno.
+
+Ahora se agrupan en un resultado, con el detalle en `resoluciones`. La fusión exige que coincidan tribunal, rol **y** carátula: juntar dos causas distintas sería mucho peor que mostrarlas aparte.
+
+Lo mismo con las normas: un fallo que aplica cinco artículos del Código del Trabajo traía cinco veces el nombre del código y cinco veces la misma URL de la BCN. `normas_aplicadas` viene agrupado por norma, con sus artículos juntos, que además es como se cita.
+
+## Fallas silenciosas
+
+El peligro de esta herramienta no es el error visible: es la respuesta que parece válida y no lo es. Cada uno de estos casos fue un error real, y hoy hay una prueba que impide que vuelva:
+
+| Fallaba así | Ahora |
+|---|---|
+| Buscar sin criterio devolvía el corpus entero (303.376 fallos) por fecha | Se rechaza pidiendo un criterio |
+| Un UNID falso de Contraloría devolvía una ficha vacía con `vigente_aparente: true` | `encontrado: false` con el motivo |
+| Contraloría sin criterio devolvía `total: 0`, que se lee como "no hay dictámenes" | Se rechaza |
+| Cero resultados no se distinguía de una búsqueda que no corrió | `sin_datos` + `sugerencia` |
+| `ver_sentencia` devolvía 1.200 caracteres prometiendo "texto completo" | Trae el fallo íntegro |
+| Solr colaba recortes de cuatro caracteres como si fueran pasajes citables | Mínimo 40 caracteres |
 
 ## Fiabilidad
 

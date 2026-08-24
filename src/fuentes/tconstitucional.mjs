@@ -58,7 +58,7 @@ function limpiarFolio(t) {
 }
 
 /** Párrafos coincidentes que se devuelven por fallo. Ver recortar(). */
-const TOPE_PARRAFOS = 4;
+const TOPE_PARRAFOS = 3;
 
 function normalizar(s) {
   const extra = campos(s.custom_fields);
@@ -121,6 +121,14 @@ export async function buscarSentenciasTC({ consulta, pagina = 1, desde, hasta, t
       paginas: j.meta?.last_page ?? null,
       tribunal: 'Tribunal Constitucional',
       resultados,
+      ...(resultados.length === 0
+        ? {
+            sin_datos: true,
+            sugerencia:
+              'Sin coincidencias en el buscador del Tribunal Constitucional. Prueba con otros ' +
+              'términos. Que no aparezca aquí no significa que el TC no se haya pronunciado.',
+          }
+        : {}),
       como_verificar: 'Cada sentencia trae `pdf` (descarga directa del fallo) y `url` al buscador del TC: https://buscador.tcchile.cl',
     };
   });
@@ -133,7 +141,7 @@ export async function buscarSentenciasTC({ consulta, pagina = 1, desde, hasta, t
  *
  * Los fallos del TC son PDF completos y los párrafos coincidentes llegaban a
  * ocho por sentencia, de unos 700 caracteres cada uno: el 79% de la respuesta.
- * Cuatro bastan para juzgar la pertinencia y para citar el pasaje; quien
+ * Tres bastan para juzgar la pertinencia y para citar el pasaje; quien
  * necesite el resto tiene el PDF en `pdf`.
  *
  * Va FUERA de la caché a propósito: así se guarda el resultado completo y

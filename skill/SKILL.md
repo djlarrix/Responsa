@@ -136,7 +136,7 @@ Un tercio de lo que devuelve la Corte Suprema son declaraciones de inadmisibilid
 
 Cada fallo trae el campo **`aporte`**, calculado sobre lo que resolvió:
 
-- **`fija doctrina`** — acogió una unificación de jurisprudencia, acogió la casación en el fondo, dictó sentencia de reemplazo o casó de oficio. Aquí la Corte tomó posición. Es lo que hay que citar.
+- **`fija doctrina`** — acogió una unificación de jurisprudencia, acogió la casación en el fondo, dictó sentencia de reemplazo o casó de oficio. Aquí la Corte tomó posición. Es lo que hay que citar. **Sólo aparece en la Corte Suprema**: una Corte de Apelaciones que acoge un recurso resuelve ese caso, no fija doctrina.
 - **`resuelve el fondo`** — rechazó el recurso, pero razonando sobre el asunto. Sirve, y sirve especialmente para mostrar el criterio contrario o el estándar exigido.
 - **`no entra al fondo`** — inadmisible, extemporáneo, rechazado en limine. **No lo cites como criterio del tribunal**, porque el tribunal no se pronunció. Sólo tiene sentido citarlo si la pregunta es justamente si la Corte ha entrado a conocer la materia.
 
@@ -144,7 +144,11 @@ Las búsquedas ya revisan más fallos de los que devuelven y te entregan los que
 
 **Elige por ratio, no por cantidad.** Tres fallos que resuelven el punto valen más que ocho enumerados. Antes de citar uno, ten claro qué resolvió y por qué: si no puedes decirlo en una frase, no lo cites. Y si dos fallos dicen lo mismo, cita el que fija doctrina y menciona el otro como concordante en vez de repetir el razonamiento.
 
-Cuando el `aporte` de un fallo no venga (los juzgados no llenan ese campo), decide leyendo el `resultado` y los `pasajes_coincidentes`.
+Los juzgados no publican la parte resolutiva, así que ahí no viene `aporte` y el campo `seleccion` lo dice. En esa sede decide leyendo los `pasajes_coincidentes`, y no supongas qué resolvió el tribunal a partir del extracto.
+
+**Una causa es un precedente, aunque tenga dos sentencias.** Cuando la Corte acoge una casación o una unificación dicta dos documentos: la sentencia que acoge y la de reemplazo. Vienen agrupados en un solo resultado, con el detalle en `resoluciones`. Cítalo como **un** fallo —el rol es uno solo— y menciona la sentencia de reemplazo cuando sea ahí donde quedó la decisión de fondo. Nunca los presentes como dos precedentes concordantes.
+
+**`normas_aplicadas` viene agrupado por norma**, con sus artículos juntos: se cita "aplicó los artículos 58, 160 y 171 del Código del Trabajo", no una entrada por artículo.
 
 ## Referencias en APA 7
 
@@ -254,6 +258,8 @@ Las herramientas avisan cuando algo no se puede dar por bueno. **Si una respuest
 `sin_datos: true` — El servicio no entregó datos para esa combinación. **No significa que no exista lo consultado.** En estadísticas, no lo conviertas en "no hay juicios de ese tipo"; en Contraloría, significa que la búsqueda no llegó a ejecutarse y por tanto no puedes afirmar que no haya dictámenes sobre la materia.
 
 `aporte: 'no entra al fondo'` — El fallo se declaró inadmisible o se rechazó sin pronunciamiento. **No lo cites como criterio del tribunal.**
+
+`sugerencia` junto a `sin_datos` — La búsqueda corrió y no encontró nada. Dilo como lo que es: no encontraste, no que no exista. El buscador del Poder Judicial es una selección, no el universo de sentencias.
 
 `no_descargados` en la carpeta de respaldo — Esos documentos no quedaron guardados. Nómbraselos al usuario: son justamente las citas que va a tener que comprobar a mano.
 
