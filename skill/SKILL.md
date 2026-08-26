@@ -202,7 +202,9 @@ Si la consulta es para un escrito, una demanda o un informe en derecho dirigido 
 
 `guardar_respaldo` deja en Descargas una carpeta con el documento fuente de cada cosa citada: PDF cuando el organismo lo publica y Word cuando no, más un índice. Sirve para que el abogado compruebe las citas por su cuenta y las archive junto al caso.
 
-**Pregunta al principio de tu respuesta, y sólo cuando proceda.** Una línea, después de la línea de fuentes, y sigue con el informe sin esperar la respuesta:
+**Si el usuario la pide, no preguntes: hazla.** "Déjame los documentos", "guárdame la carpeta", "quiero los PDF" ya son un sí. Volver a preguntar es hacerle repetir lo que acaba de decir.
+
+**Si no la ha pedido, ofrécela al principio de tu respuesta, y sólo cuando proceda.** Una línea, después de la línea de fuentes, y sigue con el informe sin esperar la respuesta:
 
 > ¿Quieres que deje los documentos citados en una carpeta en Descargas? Dime que sí y la armo.
 

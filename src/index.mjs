@@ -127,10 +127,19 @@ const HERRAMIENTAS = [
     description:
       'Deja en una carpeta de Descargas los documentos fuente de lo que se citó, en PDF cuando el ' +
       'organismo lo publica y en Word cuando no, con la procedencia y el enlace impresos en cada uno. ' +
-      'Sirve para que el abogado compruebe las citas y las archive en su expediente. ' +
-      'NO la uses por iniciativa propia: pregúntale antes al usuario si quiere la carpeta, y sólo ' +
-      'llámala si dice que sí. Los identificadores salen de los resultados de búsqueda que ya tienes; ' +
-      'no inventes ninguno.',
+      'Sirve para que el abogado compruebe las citas y las archive en su expediente.
+
+' +
+      'CUÁNDO LLAMARLA:
+' +
+      '• Si el usuario la pide —"déjame los documentos", "guárdame la carpeta", "quiero los PDF"—, ' +
+      'llámala de inmediato. No vuelvas a preguntar: ya te dijo que sí.
+' +
+      '• Si el usuario NO la ha pedido, ofrécesela en una línea y llámala sólo si acepta. ' +
+      'Escribe en el disco del usuario, y eso no se hace sin permiso.
+
+' +
+      'Los identificadores salen de los resultados de búsqueda que ya tienes; no inventes ninguno.',
     inputSchema: {
       type: 'object',
       properties: {
