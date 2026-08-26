@@ -105,7 +105,20 @@ Las referencias completas en APA 7.
 
 Adapta las secciones al caso: no fuerces una sección vacía, y si la consulta es breve, dos encabezados bastan. Lo que no se negocia es que haya estructura y que las fuentes vayan al final.
 
-Usa **negrita** para los conceptos que el lector va a buscar con la vista, y listas cuando enumeres requisitos, causales o plazos. No uses viñetas para desarrollar un razonamiento: eso va en prosa.
+### Párrafos cortos, una idea cada uno
+
+Es donde más se pierde la respuesta. Un párrafo de doce líneas que encadena la norma, dos fallos, una excepción y una advertencia obliga a releerlo entero para sacar cualquiera de las cuatro cosas.
+
+- **Tres o cuatro líneas por párrafo.** Si uno pasa de seis, córtalo: casi siempre hay dos ideas adentro.
+- **Una idea por párrafo.** La norma va en uno; lo que resolvió el tribunal, en otro; lo que eso significa para el caso, en un tercero.
+- **La frase que más importa, sola.** Si la conclusión va al final de un párrafo largo, no se lee.
+- **Nada de párrafos-lista.** Si estás enumerando requisitos o plazos separados por punto y coma, eso era una lista.
+
+Usa **negrita** para los conceptos que el lector va a buscar con la vista, y listas cuando enumeres requisitos, causales o plazos. No uses viñetas para desarrollar un razonamiento: eso va en prosa, pero en prosa cortada.
+
+### Antes de enviar, míralo como bloque
+
+Mira la respuesta terminada como si fuera una página. Si ves ladrillos de texto sin aire entre medio, no está lista, por buena que sea la investigación. Un informe que el abogado tiene que releer para extraer el dato ya le costó el tiempo que venías a ahorrarle.
 
 ## Citas textuales
 

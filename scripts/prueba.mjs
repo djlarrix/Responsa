@@ -51,7 +51,7 @@ function documentoXml(buf) {
 // Ya pasó una vez, con un commit publicado.
 seccion('El servidor arranca');
 try {
-  const { execFileSync } = await import('node:child_process');
+  const { execFileSync, execFile } = await import('node:child_process');
   const { readdirSync, statSync } = await import('node:fs');
   const { join, dirname } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -88,6 +88,36 @@ try {
   const huerfanas = declaradas.filter((d) => !atendidas.includes(d));
   check('cada herramienta declarada tiene quien la atienda', huerfanas.length === 0,
     huerfanas.length ? huerfanas.join(', ') : `${declaradas.length} herramientas`);
+
+  // El servidor manda su método en el `initialize`. Es lo único que llega al
+  // chat de Claude Desktop, donde la skill de Claude Code no se carga: sin
+  // esto, las respuestas salen como un bloque corrido de texto.
+  const inicio = await new Promise((resolver) => {
+    const proc = execFile(process.execPath, [join(raiz, 'src', 'index.mjs')]);
+    const corte = setTimeout(() => { proc.kill(); resolver(null); }, 10000);
+    let buf = '';
+    proc.stdout.on('data', (d) => {
+      buf += d;
+      for (const linea of buf.split(/\r?\n/)) {
+        if (!linea.trim()) continue;
+        try {
+          const m = JSON.parse(linea);
+          if (m.id === 1) { clearTimeout(corte); proc.kill(); resolver(m.result ?? null); }
+        } catch { /* línea incompleta */ }
+      }
+    });
+    proc.stdin.write(JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'initialize',
+      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'prueba', version: '1' } },
+    }) + '\n');
+  });
+  const instrucciones = inicio?.instructions ?? '';
+  check('el servidor responde al initialize', !!inicio);
+  check('entrega su método al cliente', instrucciones.length > 500,
+    `${instrucciones.length} caracteres`);
+  check('el método exige estructura y párrafos cortos',
+    /Nunca un bloque corrido/.test(instrucciones) && /Párrafos de tres o cuatro líneas/.test(instrucciones));
+  check('el método prohíbe citar de memoria', /en esta conversación/.test(instrucciones));
 } catch (e) { fallo(e); }
 
 // ---------- Chequeo de salud ----------

@@ -433,9 +433,66 @@ const HERRAMIENTAS = [
   },
 ];
 
+/**
+ * Método mínimo, entregado por el propio servidor.
+ *
+ * La skill de `~/.claude/skills/responsa` sólo la lee Claude Code. En el chat
+ * de Claude Desktop llegan las 21 herramientas y ninguna instrucción de cómo
+ * responder, y por eso ahí las respuestas salían como un bloque corrido de
+ * texto. El protocolo MCP permite que el servidor mande sus instrucciones al
+ * cliente: esto viaja con el servidor y llega a todos lados.
+ *
+ * Es la versión condensada de la skill. Si crece, hay que podarla: se envía en
+ * cada sesión.
+ */
+const INSTRUCCIONES = `Responsa consulta fuentes jurídicas chilenas oficiales. Cómo usarlo, y cómo redactar con lo que devuelve.
+
+## Cómo se escribe la respuesta
+
+Con encabezados y secciones. **Nunca un bloque corrido de texto**: un informe jurídico se lee buscando un punto concreto, no de principio a fin, y un muro de prosa obliga a leerlo entero.
+
+Abre con una línea que diga qué se consultó:
+  **Responsa** · Poder Judicial (3 fallos de la Corte Suprema) · Ley Chile (art. 162 del Código del Trabajo)
+
+Después, las secciones que correspondan al caso:
+  ## Respuesta corta — dos o tres frases con la conclusión
+  ## Marco normativo — qué dice la ley, con el texto del artículo
+  ## Qué han resuelto los tribunales — cada fallo con su rol, qué resolvió y el pasaje que lo funda
+  ## Criterio administrativo — Contraloría o Dirección del Trabajo, si viene al caso
+  ## Consideraciones prácticas — plazos, montos, riesgos
+  ## Fuentes — las referencias completas
+
+Reglas de redacción:
+- **Párrafos de tres o cuatro líneas, una idea cada uno.** Si uno pasa de seis líneas, córtalo en dos.
+- **Negrita** en los conceptos que el lector busca con la vista.
+- Listas para requisitos, causales, plazos y montos. Prosa para el razonamiento.
+- No dejes una sección vacía por cumplir el formato; sí deja siempre las fuentes al final.
+
+## Lo que no se hace nunca
+
+No afirmes el contenido de una norma, un fallo o un dictamen sin haberlo traído con una herramienta **en esta conversación**. Un rol o un considerando citados de memoria son, en la práctica, inventados. Si la herramienta no encontró nada, la respuesta es "no encontré respaldo para esto", no una cita verosímil.
+
+No completes datos que la fuente no entregó: si no vino el considerando, la página o el redactor, no los pongas.
+
+No conviertas "no encontré" en "no existe". El buscador del Poder Judicial es una selección, no el universo de sentencias.
+
+No cites Responsa como fuente: lo que se cita es el fallo, la norma o el dictamen.
+
+## Citas textuales
+
+Cuando el texto de la fuente es lo que funda la conclusión, cítalo literal, copiado del campo que devolvió la herramienta, con la referencia pegada: tribunal y rol, norma y artículo, o número de dictamen. Los fallos traen \`pasajes_coincidentes\`, que son los fragmentos que coincidieron con la consulta: eso es lo que se cita, no una descripción de lo que trata la sentencia.
+
+## Campos que cambian lo que puedes afirmar
+
+\`advertencia\`, \`sin_datos\`, \`derogado\`, \`reconsiderado\` y \`aporte: "no entra al fondo"\` no son detalle técnico. Un artículo derogado no funda nada; un dictamen reconsiderado pudo ser reemplazado; un fallo declarado inadmisible no es criterio del tribunal.
+
+## Cuándo buscar
+
+Busca jurisprudencia siempre que la respuesta sea una afirmación sobre lo que hacen los tribunales, aunque no te la pidan con ese nombre: "¿qué tan posible es que prospere?", "¿tengo caso?", "¿conviene demandar?". No busques para preguntas de método, definiciones que no vas a citar, ni para algo que ya trajiste en esta conversación.`;
+
 const servidor = new Server(
   { name: 'responsa', version: '1.0.0' },
-  { capabilities: { tools: {} } },
+  { capabilities: { tools: {} }, instructions: INSTRUCCIONES },
 );
 
 servidor.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: HERRAMIENTAS }));
