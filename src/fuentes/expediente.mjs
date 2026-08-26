@@ -9,6 +9,10 @@
  *     del Trabajo, Contraloría, Ley Chile). Cada uno lleva impresa la
  *     procedencia y el enlace, así que sigue siendo verificable.
  *
+ * Se entrega de dos formas: una carpeta en Descargas, o un solo .zip para
+ * quien no quiera que le llenen Descargas de carpetas —o quiera moverlo,
+ * mandarlo o archivarlo de una vez.
+ *
  * Nunca se guarda algo que no tenga origen público y citable: si un documento
  * no se puede traer, queda anotado en el índice como pendiente, con el motivo.
  * No se inventa el archivo ni se sustituye por un resumen.
@@ -19,6 +23,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { descargar } from '../lib/http.mjs';
 import { crearDocx } from '../lib/docx.mjs';
+import { armarZip } from '../lib/zip.mjs';
 import { verSentencia } from './pjud.mjs';
 import { verDictamen } from './contraloria.mjs';
 import { verDictamenDT } from './direcciontrabajo.mjs';
@@ -48,6 +53,20 @@ function sanear(nombre, tope = 70) {
 }
 
 const hoy = () => new Date().toISOString().slice(0, 10);
+
+/** Dos investigaciones del mismo asunto el mismo día no deben pisarse. */
+function rutaLibre(ruta) {
+  if (!existsSync(ruta)) return ruta;
+  const punto = ruta.lastIndexOf('.');
+  const [raiz, ext] = punto > ruta.lastIndexOf('\\') && punto > ruta.lastIndexOf('/')
+    ? [ruta.slice(0, punto), ruta.slice(punto)]
+    : [ruta, ''];
+  for (let i = 2; i < 100; i++) {
+    const alt = `${raiz} (${i})${ext}`;
+    if (!existsSync(alt)) return alt;
+  }
+  return `${raiz} (${Date.now()})${ext}`;
+}
 
 /** Divide un texto largo en párrafos para el .docx. */
 function aParrafos(texto) {
@@ -223,8 +242,10 @@ export const TIPOS_DOCUMENTO = Object.keys(TRAEN);
  * @param {string} p.asunto rotula la carpeta
  * @param {Array<object>} p.documentos {tipo, titulo, ...identificadores}
  * @param {string} [p.consulta] la pregunta que originó la investigación
+ * @param {'carpeta'|'zip'} [p.formato] cómo entregarlo. Default carpeta.
+ * @param {string} [p.destino] dónde dejarlo. Default, la carpeta de Descargas.
  */
-export async function armarExpediente({ asunto, documentos, consulta }) {
+export async function armarExpediente({ asunto, documentos, consulta, formato = 'carpeta', destino }) {
   if (!asunto || !String(asunto).trim()) throw new Error('Indica el `asunto` para rotular la carpeta.');
   if (!Array.isArray(documentos) || documentos.length === 0) {
     throw new Error('Indica al menos un documento en `documentos`.');
@@ -234,6 +255,12 @@ export async function armarExpediente({ asunto, documentos, consulta }) {
       `Son ${documentos.length} documentos: pide como máximo 40 por carpeta para no dejarla a medias.`,
     );
   }
+  if (formato !== 'carpeta' && formato !== 'zip') {
+    throw new Error(`Formato desconocido: "${formato}". Usa "carpeta" o "zip".`);
+  }
+  if (destino && !existsSync(destino)) {
+    throw new Error(`La ruta de destino no existe: ${destino}. Indica una carpeta que ya exista.`);
+  }
   const desconocidos = [...new Set(documentos.map((d) => d?.tipo).filter((t) => !TRAEN[t]))];
   if (desconocidos.length) {
     throw new Error(
@@ -241,35 +268,30 @@ export async function armarExpediente({ asunto, documentos, consulta }) {
     );
   }
 
-  const base = carpetaDescargas();
-  let carpeta = join(base, sanear(`Responsa - ${asunto} - ${hoy()}`, 90));
-  // Dos investigaciones del mismo asunto el mismo día no deben pisarse.
-  if (existsSync(carpeta)) {
-    for (let i = 2; i < 100; i++) {
-      const alt = `${carpeta} (${i})`;
-      if (!existsSync(alt)) {
-        carpeta = alt;
-        break;
-      }
-    }
-  }
-  await mkdir(carpeta, { recursive: true });
+  const base = destino || carpetaDescargas();
+  const rotulo = sanear(`Responsa - ${asunto} - ${hoy()}`, 90);
 
-  // En serie a propósito: el control de ritmo por host ya limita, y una ráfaga
-  // paralela contra la BCN o el PJUD termina en 429 y en carpeta incompleta.
+  // Los documentos se arman primero en memoria: sirven igual para escribirlos
+  // sueltos en una carpeta que para empaquetarlos en un .zip, y así un fallo a
+  // media descarga no deja una carpeta a medio llenar.
   const guardados = [];
   const pendientes = [];
   let n = 0;
+  // En serie a propósito: el control de ritmo por host ya limita, y una ráfaga
+  // paralela contra la BCN o el PJUD termina en 429 y en expediente incompleto.
   for (const d of documentos) {
     n++;
-    const rotulo = d.titulo || `${d.tipo} ${d.rol ?? d.id ?? d.unid ?? d.idNorma ?? ''}`.trim();
+    const titulo = d.titulo || `${d.tipo} ${d.rol ?? d.id ?? d.unid ?? d.idNorma ?? ''}`.trim();
     try {
       const doc = await TRAEN[d.tipo](d);
-      const nombre = `${String(n).padStart(2, '0')} - ${doc.nombre}`;
-      await writeFile(join(carpeta, nombre), doc.datos);
-      guardados.push({ archivo: nombre, titulo: rotulo, enlace: doc.enlace ?? null });
+      guardados.push({
+        archivo: `${String(n).padStart(2, '0')} - ${doc.nombre}`,
+        titulo,
+        enlace: doc.enlace ?? null,
+        datos: doc.datos,
+      });
     } catch (e) {
-      pendientes.push({ titulo: rotulo, motivo: String(e?.message ?? e) });
+      pendientes.push({ titulo, motivo: String(e?.message ?? e) });
     }
   }
 
@@ -284,7 +306,7 @@ export async function armarExpediente({ asunto, documentos, consulta }) {
       color: '555555',
     },
     { texto: '' },
-    { texto: `Documentos en esta carpeta (${guardados.length})`, negrita: true, tamano: 12 },
+    { texto: `Documentos incluidos (${guardados.length})`, negrita: true, tamano: 12 },
   ];
   for (const g of guardados) {
     indice.push({ texto: g.archivo, negrita: true });
@@ -296,7 +318,7 @@ export async function armarExpediente({ asunto, documentos, consulta }) {
     indice.push({ texto: `No se pudieron descargar (${pendientes.length})`, negrita: true, tamano: 12 });
     indice.push({
       texto:
-        'Estos documentos no quedaron en la carpeta y no están reemplazados por nada. ' +
+        'Estos documentos no se pudieron traer y no están reemplazados por nada. ' +
         'Hay que buscarlos en la fuente antes de citarlos.',
       cursiva: true,
       tamano: 10,
@@ -312,16 +334,33 @@ export async function armarExpediente({ asunto, documentos, consulta }) {
     tamano: 9,
     color: '555555',
   });
-  await writeFile(join(carpeta, '00 - Indice.docx'), crearDocx(indice));
+  const piezas = [['00 - Indice.docx', crearDocx(indice)], ...guardados.map((g) => [g.archivo, g.datos])];
 
-  return {
-    carpeta,
+  const comun = {
     guardados: guardados.length,
-    archivos: guardados.map((g) => g.archivo),
+    archivos: piezas.map(([nombre]) => nombre),
     ...(pendientes.length ? { no_descargados: pendientes } : {}),
     aviso: pendientes.length
       ? `Quedó ${pendientes.length === 1 ? '1 documento' : `${pendientes.length} documentos`} sin descargar, ` +
         'anotado en "00 - Indice.docx". Dile al usuario cuál faltó: no debe darlo por respaldado.'
       : undefined,
   };
+
+  if (formato === 'zip') {
+    // Todo dentro de una carpeta con el mismo rótulo, para que al descomprimir
+    // no se desparrame en el escritorio de quien lo abra.
+    const ruta = rutaLibre(join(base, `${rotulo}.zip`));
+    await writeFile(ruta, armarZip(piezas.map(([nombre, datos]) => [`${rotulo}/${nombre}`, datos])));
+    return {
+      archivo: ruta,
+      formato: 'zip',
+      ...comun,
+      nota: 'Es un solo archivo comprimido: no se creó ninguna carpeta. Dile al usuario dónde quedó para que lo abra, lo mueva o lo envíe.',
+    };
+  }
+
+  const carpeta = rutaLibre(join(base, rotulo));
+  await mkdir(carpeta, { recursive: true });
+  for (const [nombre, datos] of piezas) await writeFile(join(carpeta, nombre), datos);
+  return { carpeta, formato: 'carpeta', ...comun };
 }

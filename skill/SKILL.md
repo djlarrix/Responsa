@@ -215,6 +215,8 @@ Si la consulta es para un escrito, una demanda o un informe en derecho dirigido 
 
 **Cuándo no preguntar:** si respondiste sin consultar fuentes, si es una pregunta conceptual o de método, si no hay ningún documento que respaldar, o si ya lo ofreciste en esta conversación y dijeron que no.
 
+**Si no quieren una carpeta nueva en Descargas, ofrece el `.zip`.** Con `formato: "zip"` queda un solo archivo, sin crear ninguna carpeta: lo pueden mover, abrir donde quieran o enviarlo entero a un colega. Mucha gente rechaza la carpeta por no llenar Descargas, no porque no quiera los documentos, así que ofrece esta forma antes de dejarlos sin respaldo. Y si te indican dónde quieren que quede, pásalo en `destino`.
+
 **Nunca la llames sin permiso.** Escribe en el disco del usuario: eso se pide antes, siempre.
 
 Cuando digan que sí:
@@ -225,7 +227,7 @@ Cuando digan que sí:
 - Pon un `titulo` reconocible en cada uno: es como aparece en el índice y en el nombre del archivo.
 - Rotula el `asunto` con la materia, no con la fecha.
 
-Al terminar, dile **dónde quedó la carpeta** y cuántos documentos tiene. Si viene `no_descargados`, **nómbralos uno por uno**: el usuario tiene que saber qué cita no quedó respaldada, para comprobarla a mano antes de usarla.
+Al terminar, dile **dónde quedó** —la carpeta o el archivo `.zip`— y cuántos documentos tiene. Si viene `no_descargados`, **nómbralos uno por uno**: el usuario tiene que saber qué cita no quedó respaldada, para comprobarla a mano antes de usarla.
 
 ## Pide sólo lo que vas a usar
 

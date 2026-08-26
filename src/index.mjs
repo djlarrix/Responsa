@@ -125,20 +125,19 @@ const HERRAMIENTAS = [
   {
     name: 'guardar_respaldo',
     description:
-      'Deja en una carpeta de Descargas los documentos fuente de lo que se citó, en PDF cuando el ' +
-      'organismo lo publica y en Word cuando no, con la procedencia y el enlace impresos en cada uno. ' +
-      'Sirve para que el abogado compruebe las citas y las archive en su expediente.
-
-' +
-      'CUÁNDO LLAMARLA:
-' +
+      'Guarda los documentos fuente de lo que se citó, en PDF cuando el organismo lo publica y en ' +
+      'Word cuando no, con la procedencia y el enlace impresos en cada uno. Sirve para que el abogado ' +
+      'compruebe las citas y las archive en su expediente.\n\n' +
+      'DOS FORMAS DE ENTREGARLO:\n' +
+      '• `formato: "carpeta"` (default) deja una carpeta en Descargas.\n' +
+      '• `formato: "zip"` deja UN solo archivo comprimido, sin crear ninguna carpeta. Es la ' +
+      'alternativa para quien no quiere que le llenen Descargas, o quiere moverlo o enviarlo entero. ' +
+      'Si rechazan la carpeta, ofrece esta forma antes de dejarlo sin respaldo.\n\n' +
+      'CUÁNDO LLAMARLA:\n' +
       '• Si el usuario la pide —"déjame los documentos", "guárdame la carpeta", "quiero los PDF"—, ' +
-      'llámala de inmediato. No vuelvas a preguntar: ya te dijo que sí.
-' +
+      'llámala de inmediato. No vuelvas a preguntar: ya te dijo que sí.\n' +
       '• Si el usuario NO la ha pedido, ofrécesela en una línea y llámala sólo si acepta. ' +
-      'Escribe en el disco del usuario, y eso no se hace sin permiso.
-
-' +
+      'Escribe en el disco del usuario, y eso no se hace sin permiso.\n\n' +
       'Los identificadores salen de los resultados de búsqueda que ya tienes; no inventes ninguno.',
     inputSchema: {
       type: 'object',
@@ -148,6 +147,18 @@ const HERRAMIENTAS = [
           description: 'Rótulo de la carpeta, p.ej. "Nulidad del despido". Va en el nombre del directorio.',
         },
         consulta: { type: 'string', description: 'La pregunta que originó la investigación. Queda en el índice.' },
+        formato: {
+          type: 'string',
+          enum: ['carpeta', 'zip'],
+          description:
+            'Default "carpeta". Usa "zip" si el usuario no quiere una carpeta nueva en Descargas: ' +
+            'queda un único archivo que puede mover, abrir o enviar.',
+        },
+        destino: {
+          type: 'string',
+          description:
+            'Ruta donde dejarlo, si el usuario indicó una. Tiene que existir. Sin esto va a Descargas.',
+        },
         documentos: {
           type: 'array',
           description: 'Los documentos a respaldar. Cada uno con su `tipo` y los identificadores de ese tipo.',
@@ -524,7 +535,13 @@ async function ejecutar(name, a) {
       return verSentencia({ rol: a.rol, era: a.era, tribunal: a.tribunal });
 
     case 'guardar_respaldo':
-      return armarExpediente({ asunto: a.asunto, documentos: a.documentos, consulta: a.consulta });
+      return armarExpediente({
+        asunto: a.asunto,
+        documentos: a.documentos,
+        consulta: a.consulta,
+        formato: a.formato ?? 'carpeta',
+        destino: a.destino,
+      });
 
     case 'buscar_ley':
       return buscarNormas(a.consulta, a.limite ?? 8);

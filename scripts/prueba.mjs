@@ -45,6 +45,51 @@ function documentoXml(buf) {
   return inflateRawSync(buf.subarray(inicio, inicio + comprimido)).toString('utf8');
 }
 
+// ---------- El servidor tiene que poder arrancar ----------
+// Va primero y a propósito: un error de sintaxis en index.mjs deja el servidor
+// MCP sin arrancar, y ninguna otra prueba lo detecta porque ninguna lo carga.
+// Ya pasó una vez, con un commit publicado.
+seccion('El servidor arranca');
+try {
+  const { execFileSync } = await import('node:child_process');
+  const { readdirSync, statSync } = await import('node:fs');
+  const { join, dirname } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+  const archivos = [];
+  (function recorrer(dir) {
+    for (const e of readdirSync(dir)) {
+      const ruta = join(dir, e);
+      if (statSync(ruta).isDirectory()) recorrer(ruta);
+      else if (/\.mjs$/.test(e)) archivos.push(ruta);
+    }
+  })(join(raiz, 'src'));
+
+  const rotos = [];
+  for (const a of archivos) {
+    try {
+      execFileSync(process.execPath, ['--check', a], { stdio: ['ignore', 'ignore', 'pipe'] });
+    } catch (err) {
+      // La salida de `node --check` trae la línea, el subrayado y el mensaje;
+      // el útil es el mensaje, no el subrayado de acentos circunflejos.
+      const lineas = String(err.stderr ?? '').split(/\r?\n/).map((l) => l.trim());
+      const detalle = lineas.find((l) => /Error/.test(l)) ?? lineas.find(Boolean) ?? 'error';
+      rotos.push(`${a.replace(raiz, '')}: ${detalle}`);
+    }
+  }
+  check(`los ${archivos.length} módulos del servidor compilan`, rotos.length === 0, rotos.join(' | ').slice(0, 120));
+
+  // La lista de herramientas y el switch que las atiende tienen que cuadrar:
+  // una herramienta declarada sin `case` responde "desconocida" en producción.
+  const fuente = (await import('node:fs')).readFileSync(join(raiz, 'src', 'index.mjs'), 'utf8');
+  const declaradas = [...fuente.matchAll(/^    name: '([a-z_]+)'/gm)].map((m) => m[1]);
+  const atendidas = [...fuente.matchAll(/^    case '([a-z_]+)'/gm)].map((m) => m[1]);
+  const huerfanas = declaradas.filter((d) => !atendidas.includes(d));
+  check('cada herramienta declarada tiene quien la atienda', huerfanas.length === 0,
+    huerfanas.length ? huerfanas.join(', ') : `${declaradas.length} herramientas`);
+} catch (e) { fallo(e); }
+
 // ---------- Chequeo de salud ----------
 seccion('Salud de las fuentes');
 const salud = await verificarFuentes();
@@ -302,6 +347,30 @@ try {
   check('los archivos no quedan vacíos', archivos.every((f) => statSync(join(r.carpeta, f)).size > 500));
   const indice = readFileSync(join(r.carpeta, '00 - Indice.docx'));
   check('el índice es un .docx válido', indice[0] === 0x50 && indice[1] === 0x4b);
+
+  // Alternativa para quien no quiere una carpeta nueva en Descargas.
+  const z = await armarExpediente({
+    asunto: 'Prueba en zip',
+    documentos: [{ tipo: 'norma', idNorma: '172986', articulo: '1545', titulo: 'Código Civil, art. 1545' }],
+    formato: 'zip',
+  });
+  check('entrega un solo archivo .zip', /\.zip$/.test(z.archivo ?? '') && z.formato === 'zip');
+  check('el .zip no deja ninguna carpeta suelta',
+    readdirSync(dirPrueba).filter((f) => statSync(join(dirPrueba, f)).isDirectory() && /zip/i.test(f)).length === 0);
+  const bytes = readFileSync(z.archivo);
+  check('el .zip es un archivo válido', bytes[0] === 0x50 && bytes[1] === 0x4b, `${bytes.length} bytes`);
+  // Los nombres van en UTF-8 con el bit 11, o Windows rompe los acentos.
+  check('marca los nombres como UTF-8', bytes.readUInt16LE(6) === 0x0800);
+  check('todo va dentro de una sola carpeta al descomprimir',
+    bytes.toString('latin1').includes('Prueba en zip'));
+  try {
+    await armarExpediente({ asunto: 'x', documentos: [{ tipo: 'norma', idNorma: '1' }], formato: 'pdf' });
+    check('rechaza un formato inexistente', false);
+  } catch (err) { check('rechaza un formato inexistente', /Formato desconocido/.test(err.message)); }
+  try {
+    await armarExpediente({ asunto: 'x', documentos: [{ tipo: 'norma', idNorma: '1' }], destino: join(dirPrueba, 'no-existe') });
+    check('rechaza un destino inexistente', false);
+  } catch (err) { check('rechaza un destino inexistente', /no existe/.test(err.message)); }
   try {
     await armarExpediente({ asunto: 'x', documentos: [{ tipo: 'inventado' }] });
     check('rechaza un tipo de documento inexistente', false);
