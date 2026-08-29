@@ -502,5 +502,49 @@ try {
     r.resultados.every((x) => new Set(x.pasajes_coincidentes ?? []).size === (x.pasajes_coincidentes?.length ?? 0)));
 } catch (e) { fallo(e); }
 
+// ---------- Libre competencia (TDLC) ----------
+// El TDLC no está en el buscador del Poder Judicial: sin esto, colusión y
+// abuso de posición dominante quedaban sin respuesta.
+seccion('Libre competencia (TDLC)');
+try {
+  const { buscarCompetencia } = await import('../src/fuentes/competencia.mjs');
+
+  const a = await buscarCompetencia({ consulta: 'abuso de posición dominante', limite: 3 });
+  check('encuentra por conducta', a.resultados.length > 0, `${a.total} de ${a.revisados} revisados`);
+  check('trae el identificador para citar', a.resultados.some((x) => /Sentencia/i.test(x.identificador ?? '')));
+  check('trae el PDF del fallo', a.resultados.every((x) => !x.pdf || /\.pdf$/i.test(x.pdf)));
+  check('trae la conducta que clasificó el tribunal', a.resultados.some((x) => (x.conducta ?? []).length > 0));
+  // El texto no viene por la API: hay que decirlo, no dejar que se cite de oído.
+  check('advierte que no entrega el texto del fallo', /no viene en esta respuesta/i.test(a.advertencia ?? ''));
+
+  // El TDLC no usa la palabra "colusión": clasifica los carteles como "acuerdo
+  // o práctica concertada". Sin traducción, la consulta más obvia de la materia
+  // devolvía cero, que se leería como que no hay jurisprudencia de colusión.
+  const col = await buscarCompetencia({ consulta: 'colusión', limite: 2 });
+  check('traduce "colusión" al vocabulario del tribunal', col.total > 0, `${col.total} fallos`);
+  check('declara que tradujo la consulta', /no usa ese término/i.test(col.nota_busqueda ?? ''));
+
+  // Traducir no puede comerse el resto de la consulta.
+  const farm = await buscarCompetencia({ consulta: 'cartel de las farmacias', limite: 1 });
+  check('la traducción conserva el resto de la consulta',
+    /farmacia/i.test(farm.resultados[0]?.resumen ?? ''), farm.resultados[0]?.resumen?.slice(0, 58));
+
+  const res = await buscarCompetencia({ consulta: 'operación de concentración', coleccion: 'resoluciones', limite: 1 });
+  check('busca también en resoluciones', res.resultados.length > 0, `${res.total} de ${res.revisados}`);
+
+  const vacio = await buscarCompetencia({ consulta: 'zzqxwvkjhgfdsa' });
+  check('sin coincidencias lo declara', vacio.sin_datos === true && vacio.total === 0);
+  check('y muestra el vocabulario del tribunal', (vacio.conductas_del_tribunal ?? []).length > 5);
+
+  try {
+    await buscarCompetencia({});
+    check('exige la consulta', false);
+  } catch (e) { check('exige la consulta', /Falta la consulta/.test(e.message)); }
+  try {
+    await buscarCompetencia({ consulta: 'colusión', coleccion: 'inventada' });
+    check('rechaza una colección inexistente', false);
+  } catch (e) { check('rechaza una colección inexistente', /desconocida/.test(e.message)); }
+} catch (e) { fallo(e); }
+
 console.log(`\n──────────────\n${ok} OK, ${fallos} fallas\n`);
 process.exit(fallos > 0 ? 1 : 0);

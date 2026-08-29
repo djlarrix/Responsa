@@ -30,6 +30,9 @@ const RITMO = {
   'www.dt.gob.cl': 350,
   'buscador-backend.tcchile.cl': 300,
   'www.ccs.cl': 400,
+  // La ficha del PDF se pide una por resultado; sin freno el sitio del TDLC
+  // corta la ráfaga.
+  'www.tdlc.cl': 350,
 };
 
 const ultimaPeticion = new Map();

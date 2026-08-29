@@ -23,6 +23,7 @@ import { buscarDictamenes, verDictamen } from './fuentes/contraloria.mjs';
 import { consultarEstadistica, CONSULTAS_DISPONIBLES, CORTES, COMPETENCIAS } from './fuentes/estadisticas.mjs';
 import { enlaceConsultaCausas, COMPETENCIAS_OJV } from './fuentes/causas.mjs';
 import { buscarLaudos, listarMateriasArbitrales } from './fuentes/arbitraje.mjs';
+import { buscarCompetencia, COLECCIONES as COLECCIONES_TDLC } from './fuentes/competencia.mjs';
 import { valorEconomico, INDICADORES_DISPONIBLES } from './fuentes/valores.mjs';
 import { armarExpediente, TIPOS_DOCUMENTO } from './fuentes/expediente.mjs';
 import { verificarFuentes } from './lib/salud.mjs';
@@ -311,6 +312,39 @@ const HERRAMIENTAS = [
         nombre: { type: 'string' },
         rut: { type: 'string', description: 'RUT sin dígito verificador (persona jurídica).' },
       },
+    },
+  },
+  {
+    name: 'buscar_jurisprudencia_competencia',
+    description:
+      'Jurisprudencia del Tribunal de Defensa de la Libre Competencia (TDLC). Es donde se resuelve ' +
+      'colusión, abuso de posición dominante, competencia desleal y operaciones de concentración: ' +
+      'esos fallos NO están en el buscador del Poder Judicial, así que sin esta herramienta la ' +
+      'materia queda sin respuesta.\n\n' +
+      'Busca por conducta ("colusión", "abuso de posición dominante"), por industria ("farmacias", ' +
+      '"transporte") o por las partes. Entiende el término del abogado aunque el tribunal use otro: ' +
+      'clasifica los carteles como "acuerdo o práctica concertada", y lo traduce solo.\n\n' +
+      'IMPORTANTE: devuelve el resumen oficial del fallo y el enlace al PDF, pero NO su texto. ' +
+      'Para citar un considerando hay que abrir el PDF; no atribuyas al fallo nada que no esté en ' +
+      'el `resumen`.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        consulta: {
+          type: 'string',
+          description: 'Conducta, industria o partes. P. ej. "colusión", "farmacias", "operación de concentración".',
+        },
+        coleccion: {
+          type: 'string',
+          enum: Object.keys(COLECCIONES_TDLC),
+          description:
+            'sentencias (contencioso: colusión, abuso), resoluciones (consultas y concentraciones), ' +
+            'dictamenes (comisiones antimonopolio, anteriores a 2004). Default sentencias.',
+        },
+        desde: { type: 'string', description: 'Año mínimo, p. ej. "2015".' },
+        limite: { type: 'number', description: 'Cuántos traer (1-20). Default 5.' },
+      },
+      required: ['consulta'],
     },
   },
   {
@@ -665,6 +699,14 @@ async function ejecutar(name, a) {
         era: a.era,
         nombre: a.nombre,
         rut: a.rut,
+      });
+
+    case 'buscar_jurisprudencia_competencia':
+      return buscarCompetencia({
+        consulta: a.consulta,
+        coleccion: a.coleccion ?? 'sentencias',
+        desde: a.desde,
+        limite: a.limite ?? 5,
       });
 
     case 'buscar_laudos_arbitrales':

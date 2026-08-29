@@ -27,6 +27,7 @@ Todas las fuentes son **públicas y gratuitas**. No se conecta ninguna base de s
 | `ver_dictamen` | Un dictamen con texto, fuentes legales y **estado de vigencia** |
 | `buscar_dictamenes_trabajo` | Dictámenes de la Dirección del Trabajo (ORD.) |
 | `ver_dictamen_trabajo` | Un dictamen de la DT con materia y resumen separados |
+| `buscar_jurisprudencia_competencia` | Sentencias del TDLC: colusión, abuso de posición dominante, concentraciones |
 | `buscar_laudos_arbitrales` | Laudos del CAM Santiago por materia o árbitro, con PDF |
 | `listar_materias_arbitrales` | Las 781 materias y 130 árbitros indexados del CAM |
 | `estadisticas_judiciales` | Cuánto demoran las causas, cuántas ingresan y cómo terminan |
@@ -34,7 +35,7 @@ Todas las fuentes son **públicas y gratuitas**. No se conecta ninguna base de s
 | `guardar_respaldo` | Deja los documentos citados en una carpeta de Descargas, en PDF y en Word |
 | `consultar_causa` | Enlace y pasos para consultar una causa en la OJV (no automatizado) |
 | `listar_fuentes` | Qué tribunales, cortes, revistas, estadísticas y valores hay |
-| `verificar_fuentes` | Chequeo de salud de las diez fuentes externas |
+| `verificar_fuentes` | Chequeo de salud de las once fuentes externas |
 
 Algunas hacen la diferencia frente a un buscador de texto:
 
@@ -46,13 +47,21 @@ Algunas hacen la diferencia frente a un buscador de texto:
 
 **`buscar_dictamenes_trabajo`** cubre la doctrina administrativa laboral, que es la que aplican los fiscalizadores y suele decidir el resultado antes de llegar a tribunales.
 
+**`buscar_jurisprudencia_competencia`** cubre otro punto ciego: en libre competencia el criterio lo fija el TDLC, y sus fallos no están en el buscador del Poder Judicial. Antes, una consulta sobre colusión o abuso de posición dominante no encontraba nada.
+
+Su sitio es WordPress y expone la API REST estándar, pero su parámetro de búsqueda devuelve cero en los tipos que importan. Como el catálogo entero son 216 sentencias y 91 resoluciones, se replica en caché y se busca en local: más rápido, sin depender de un buscador que no funciona, y ordenando por pertinencia en vez de por fecha.
+
+Lo que lo vuelve usable es la traducción de vocabulario. **El TDLC no usa la palabra "colusión" en ninguna parte**: sus 37 fallos de carteles están clasificados como *acuerdo o práctica concertada*. Sin eso, la consulta más obvia de la materia devolvía cero, que se leería como que en Chile no hay jurisprudencia de colusión. La traducción además suma en vez de reemplazar, así que "cartel de las farmacias" sigue prefiriendo los fallos de farmacias. Y cuando no hay coincidencias, la respuesta trae las conductas que el propio tribunal usa, para que el segundo intento no sea a ciegas.
+
+El TDLC publica el texto sólo en PDF, así que esta herramienta ubica y enlaza pero **no entrega pasajes**, y lo advierte en cada respuesta.
+
 **`buscar_laudos_arbitrales`** cubre un punto ciego real: en materias comerciales, societarias y de construcción, buena parte de los conflictos se resuelve en arbitraje y nunca llega a los tribunales ordinarios. Son 1.812 laudos con enlace al PDF oficial.
 
 **`estadisticas_judiciales`** responde lo que ninguna base de jurisprudencia contesta: cuánto demora realmente un juicio. Un laboral en la C.A. de Valparaíso promedió 222 días en 2024; la Corte Suprema, 92.
 
 **`guardar_respaldo`** deja en Descargas una carpeta con el documento fuente de cada cosa citada, más un índice: PDF cuando el organismo lo publica (Tribunal Constitucional, CAM, doctrina de acceso abierto) y Word generado desde el texto oficial cuando no lo hay (Poder Judicial, Dirección del Trabajo, Contraloría, Ley Chile), con la procedencia y el enlace impresos en cada archivo. Lo que no se pudo traer queda anotado como pendiente en vez de faltar en silencio. Claude pregunta antes; nunca escribe en el disco por iniciativa propia.
 
-**`verificar_fuentes`** consulta las diez fuentes con preguntas de respuesta conocida y avisa cuál se rompió. La forma peligrosa de fallar no es el error: es el resultado vacío que se lee como "no hay jurisprudencia sobre esto".
+**`verificar_fuentes`** consulta las once fuentes con preguntas de respuesta conocida y avisa cuál se rompió. La forma peligrosa de fallar no es el error: es el resultado vacío que se lee como "no hay jurisprudencia sobre esto".
 
 ## Fuentes
 

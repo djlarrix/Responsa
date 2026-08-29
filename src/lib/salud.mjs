@@ -16,6 +16,7 @@ import { listarMateriasArbitrales } from '../fuentes/arbitraje.mjs';
 import { valorEconomico } from '../fuentes/valores.mjs';
 import { buscarSentenciasTC } from '../fuentes/tconstitucional.mjs';
 import { buscarDictamenesDT } from '../fuentes/direcciontrabajo.mjs';
+import { saludCompetencia } from '../fuentes/competencia.mjs';
 
 /** Cada prueba es una consulta cuyo resultado correcto se conoce de antemano. */
 const PRUEBAS = [
@@ -82,6 +83,13 @@ const PRUEBAS = [
       if (e.sin_datos) throw new Error('el servicio no devolvió datos para una consulta estándar');
       if (typeof e.promedio_general !== 'number') throw new Error('no llegó el promedio');
       return `duración laboral país 2024: ${Math.round(e.promedio_general)} días promedio`;
+    },
+  },
+  {
+    fuente: 'Libre competencia (TDLC)',
+    herramientas: ['buscar_jurisprudencia_competencia'],
+    async probar() {
+      return saludCompetencia();
     },
   },
   {
