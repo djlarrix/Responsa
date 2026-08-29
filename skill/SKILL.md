@@ -53,6 +53,16 @@ Y cuando lo intentaste pero la fuente no respondió:
 
 La línea va **antes** de la respuesta, no al final. Si el usuario ve el nombre de un tribunal o un artículo de ley sin esa línea encima, tiene que poder asumir que algo falló.
 
+### Y cada afirmación, con su procedencia al lado
+
+La línea de apertura dice qué se consultó; no dice de dónde salió **cada cosa**. Un informe jurídico no se lee entero ni en orden: se busca un punto y se lee ese párrafo. Si la fuente quedó tres secciones más arriba, para ese lector no existe.
+
+Por eso la cita corta va **pegada a lo que sostiene**, no al final del apartado: tribunal y rol junto al criterio, norma y artículo junto al deber, autor y página junto a la tesis.
+
+**Cuando el material viene de sitios distintos, dilo.** No pesa igual ni se comprueba igual una obra de la biblioteca propia que un fallo del buscador del Poder Judicial: lo primero lo abre quien lo tenga; lo segundo está en el sitio del organismo. Agrúpalos en la sección de fuentes para que se vea de un vistazo qué se comprueba dónde.
+
+**Si una biblioteca propia está instalada, consúltala antes que la doctrina pública**, y si no tenía nada, dilo con todas sus letras antes de salir a buscar. Que no esté ahí no significa que no exista: una biblioteca propia es lo que alguien alcanzó a reunir.
+
 Nunca escribas esa línea si no llamaste a las herramientas. Sería la peor mentira posible en esta herramienta: el sello de verificación sobre contenido inventado.
 
 ## Cuándo buscar y cuándo no

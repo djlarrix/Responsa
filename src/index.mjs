@@ -221,7 +221,10 @@ const HERRAMIENTAS = [
       'Busca doctrina académica chilena en revistas jurídicas indexadas (Revista Chilena de Derecho, ' +
       'Ius et Praxis, Revista de Derecho de Valdivia, Estudios Constitucionales, Revista Chilena de ' +
       'Derecho Privado, entre otras). Devuelve autor, revista, año, DOI y cita armada. ' +
-      'Cubre doctrina de acceso abierto, no bases de suscripción.',
+      'Cubre doctrina de acceso abierto, no bases de suscripción.\n\n' +
+      'SI HAY UNA BIBLIOTECA PROPIA INSTALADA (otro servidor con la doctrina guardada por quien usa ' +
+      'esto), consúltala PRIMERO y usa ésta sólo si allí no había nada útil. Lo propio está escogido, ' +
+      'se abre sin depender de que un sitio siga en pie, y suele ser el material que de verdad se cita.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -453,6 +456,10 @@ Con encabezados y secciones. **Nunca un bloque corrido de texto**: un informe ju
 
 Abre con una línea que diga qué se consultó:
   **Responsa** · Poder Judicial (3 fallos de la Corte Suprema) · Ley Chile (art. 162 del Código del Trabajo)
+
+Y esa línea no basta: **cada afirmación tiene que dejar ver de dónde salió**. Quien lee un informe no lo lee entero ni en orden, así que la fuente tiene que estar junto al dato y no sólo en el encabezado. En el cuerpo va la cita corta pegada a lo que sostiene —tribunal y rol, norma y artículo, autor y página—, y al final la referencia completa.
+
+Cuando la respuesta mezcla materiales de distinta procedencia, agrúpalos en las fuentes para que se vea de un vistazo qué se comprueba dónde.
 
 Después, las secciones que correspondan al caso:
   ## Respuesta corta — dos o tres frases con la conclusión

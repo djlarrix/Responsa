@@ -118,6 +118,10 @@ try {
   check('el método exige estructura y párrafos cortos',
     /Nunca un bloque corrido/.test(instrucciones) && /Párrafos de tres o cuatro líneas/.test(instrucciones));
   check('el método prohíbe citar de memoria', /en esta conversación/.test(instrucciones));
+  // La línea de apertura no basta: quien lee un informe busca un punto, no lo
+  // lee entero, así que la fuente tiene que ir junto al dato.
+  check('el método exige la fuente junto a cada afirmación',
+    /cada afirmación tiene que dejar ver de dónde salió/i.test(instrucciones));
 } catch (e) { fallo(e); }
 
 // ---------- Chequeo de salud ----------
